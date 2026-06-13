@@ -233,6 +233,23 @@ tbody tr:hover{background:#eef4f0}
 .preset-pill{padding:7px 13px;border-radius:8px;border:1px solid var(--border);background:#fff;font-family:inherit;font-weight:600;font-size:13px;cursor:pointer;color:var(--secondary)}
 .preset-pill.active{background:var(--green-mid);color:#fff;border-color:var(--green-mid)}
 
+/* ---------- Auth overlay ---------- */
+#auth-overlay{position:fixed;inset:0;background:linear-gradient(135deg,#1a3328,#2d6a4f);display:none;align-items:center;justify-content:center;padding:20px;z-index:400}
+#auth-overlay.visible{display:flex}
+#auth-card{background:#fff;border-radius:18px;width:100%;max-width:400px;padding:30px;box-shadow:0 25px 60px rgba(0,0,0,.35)}
+#auth-card .auth-logo{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+#auth-card .auth-logo .mark{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--green-mid),var(--amber));display:flex;align-items:center;justify-content:center;color:#fff;font-size:21px}
+#auth-card .auth-logo .name{font-weight:700;font-size:19px}
+#auth-card .auth-logo .name span{color:var(--amber)}
+#auth-card h2{font-size:20px;margin:14px 0 4px}
+#auth-card .auth-sub{color:var(--secondary);font-size:13px;margin-bottom:18px}
+#auth-card .field{margin-bottom:12px}
+#auth-msg{font-size:13px;margin:6px 0 12px;min-height:16px}
+#auth-msg.err{color:var(--red)}#auth-msg.ok{color:var(--green-mid)}
+.auth-toggle{text-align:center;font-size:13px;color:var(--secondary);margin-top:16px}
+.auth-toggle a{color:var(--green-mid);font-weight:600;cursor:pointer}
+#cloud-status{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--secondary)}
+
 /* ---------- Toast ---------- */
 #toast{position:fixed;bottom:24px;right:24px;background:#1a3328;color:#fff;padding:13px 20px;border-radius:11px;font-weight:600;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.25);transform:translateY(80px);opacity:0;transition:.28s;z-index:300;display:flex;align-items:center;gap:9px}
 #toast.visible{transform:none;opacity:1}
@@ -280,13 +297,112 @@ tbody tr:hover{background:#eef4f0}
   </main>
 </div>
 <div id="modal-overlay"><div id="modal-card"><div id="modal-body"></div></div></div>
+<div id="auth-overlay"><div id="auth-card"></div></div>
 <div id="toast"></div>
 
+<script type="module">
+/* Supabase client loaded from CDN, exposed for the main (classic) script. */
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+window.__createSupabase = createClient;
+</script>
 <script>
+/* ===================== CLOUD CONFIG =====================
+   To enable cross-device login + sync, paste your Supabase project's
+   URL and anon (public) key below. Both are safe to expose in client code.
+   Leave them blank to run in local-only mode (no account needed).         */
+const SUPABASE_URL = '';
+const SUPABASE_ANON_KEY = '';
+
+let SB = null;           // supabase client (null = cloud disabled)
+let CUR_USER = null;     // logged-in user object
+let cloudReady = false;  // true once initial cloud load is done
+let _pushTimer = null;
+
 /* ===================== STATE ===================== */
 const STATE = { expenses:[], groceryList:[], recurring:[], budgets:{}, stores:[], funExpenses:[], wishlist:[], funBudgets:{} };
-function save(){ localStorage.setItem('cartwise', JSON.stringify(STATE)); }
+function save(){ localStorage.setItem('cartwise', JSON.stringify(STATE)); schedulePush(); }
 function load(){ const r = localStorage.getItem('cartwise'); if(r) Object.assign(STATE, JSON.parse(r)); else resetToSampleData(); }
+
+/* ===================== CLOUD SYNC ===================== */
+function cloudEnabled(){ return !!(SUPABASE_URL && SUPABASE_ANON_KEY && window.__createSupabase); }
+function schedulePush(){
+  if(!SB || !CUR_USER || !cloudReady) return;
+  clearTimeout(_pushTimer);
+  _pushTimer = setTimeout(pushCloud, 600);
+}
+async function pushCloud(){
+  if(!SB || !CUR_USER) return;
+  try{
+    setCloudStatus('saving');
+    const { error } = await SB.from('cartwise_data')
+      .upsert({ user_id:CUR_USER.id, data:STATE, updated_at:new Date().toISOString() }, { onConflict:'user_id' });
+    setCloudStatus(error ? 'error' : 'synced');
+    if(error) console.error('Cloud save failed:', error.message);
+  }catch(e){ setCloudStatus('error'); console.error(e); }
+}
+async function pullCloud(){
+  if(!SB || !CUR_USER) return false;
+  const { data, error } = await SB.from('cartwise_data').select('data').eq('user_id', CUR_USER.id).maybeSingle();
+  if(error){ console.error('Cloud load failed:', error.message); return false; }
+  if(data && data.data){ Object.assign(STATE, { expenses:[], groceryList:[], recurring:[], budgets:{}, stores:[], funExpenses:[], wishlist:[], funBudgets:{} }, data.data); localStorage.setItem('cartwise', JSON.stringify(STATE)); return true; }
+  return false;
+}
+async function initCloud(){
+  if(!cloudEnabled()) return;
+  SB = window.__createSupabase(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const { data:{ session } } = await SB.auth.getSession();
+  if(session && session.user){ await onSignedIn(session.user, false); }
+  else { showAuthOverlay(); }
+  SB.auth.onAuthStateChange((event, sess)=>{
+    if(event==='SIGNED_IN' && sess && sess.user && (!CUR_USER || CUR_USER.id!==sess.user.id)){ onSignedIn(sess.user, false); }
+    if(event==='SIGNED_OUT'){ CUR_USER=null; cloudReady=false; showAuthOverlay(); }
+  });
+  // Refresh from cloud when returning to the tab (e.g. after editing on another device).
+  document.addEventListener('visibilitychange', async()=>{
+    if(document.visibilityState==='visible' && SB && CUR_USER){ if(await pullCloud()){ const p=document.querySelector('.page.active'); if(p) render(p.id.replace('page-','')); renderSidebarBottom(); } }
+  });
+}
+async function onSignedIn(user, isFreshSignup){
+  CUR_USER = user;
+  hideAuthOverlay();
+  const hadCloud = await pullCloud();
+  cloudReady = true;
+  if(!hadCloud){ await pushCloud(); }  // first login on this account: migrate whatever is local up to the cloud
+  setCloudStatus('synced');
+  goTo('dashboard');
+}
+async function doLogout(){
+  if(SB) await SB.auth.signOut();
+  CUR_USER=null; cloudReady=false;
+  showToast('Logged out');
+  showAuthOverlay();
+}
+function setCloudStatus(s){
+  const el=document.getElementById('cloud-status'); if(!el) return;
+  const map={ synced:['ti-cloud-check','#4ade80','Synced'], saving:['ti-cloud-up','var(--amber)','Saving…'], error:['ti-cloud-x','#f87171','Sync error'] };
+  const [ic,col,txt]=map[s]||map.synced;
+  el.innerHTML=`<i class="ti ${ic}" style="color:${col}"></i> ${txt}`;
+}
+
+/* ----- Auth UI ----- */
+let authMode='login';
+function showAuthOverlay(){ renderAuthCard(); document.getElementById('auth-overlay').classList.add('visible'); }
+function hideAuthOverlay(){ document.getElementById('auth-overlay').classList.remove('visible'); }
+function renderAuthCard(){
+  const isLogin = authMode==='login';
+  document.getElementById('auth-card').innerHTML = `
+    <div class="auth-logo"><div class="mark"><i class="ti ti-shopping-cart-bolt"></i></div><div class="name">Cart<span>Wise</span></div></div>
+    <h2>${isLogin?'Welcome back':'Create your account'}</h2>
+    <div class="auth-sub">${isLogin?'Log in to see your data on any device.':'Sign up once, then log in anywhere to sync.'}</div>
+    <div class="field"><label class="label">Email</label><input class="input" type="email" id="auth-email" placeholder="you@example.com" autocomplete="email"></div>
+    <div class="field"><label class="label">Password</label><input class="input" type="password" id="auth-pass" placeholder="${isLogin?'Your password':'At least 6 characters'}" autocomplete="${isLogin?'current-password':'new-password'}"></div>
+    <div id="auth-msg"></div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center" data-action="authSubmit"><i class="ti ti-${isLogin?'login-2':'user-plus'}"></i> ${isLogin?'Log in':'Sign up'}</button>
+    <div class="auth-toggle">${isLogin?"No account yet?":"Already have an account?"} <a data-action="authToggle">${isLogin?'Sign up':'Log in'}</a></div>`;
+  const pass=document.getElementById('auth-pass');
+  pass.addEventListener('keydown',e=>{ if(e.key==='Enter') ACTIONS.authSubmit(); });
+}
+function authMsg(text, ok){ const m=document.getElementById('auth-msg'); if(m){ m.textContent=text; m.className=ok?'ok':'err'; } }
 
 /* ===================== CONSTANTS ===================== */
 const CATEGORIES =["Dairy","Bakery","Meat","Produce","Pantry","Frozen","Beverages","Snacks","Household","Other"];
@@ -1076,8 +1192,19 @@ function renderSettings(){
       <input class="input" type="number" style="width:120px" value="${b}" data-budget-month="${mk}"></div>`;
   }).join('')||'<div class="txt-sec">No budgets set</div>';
 
+  let accountCard;
+  if(cloudEnabled() && CUR_USER){
+    accountCard = `<div class="card mb12"><div class="section-ttl"><i class="ti ti-cloud"></i> Account &amp; sync <span id="cloud-status" style="margin-left:auto;text-transform:none;letter-spacing:0"></span></div>
+      <div class="list-row" style="border:none;padding:4px"><div class="grow"><b>${esc(CUR_USER.email||'Signed in')}</b><div class="sub">Your data syncs automatically across every device you log into.</div></div>
+      <button class="btn btn-danger" data-action="logout"><i class="ti ti-logout-2"></i> Log out</button></div></div>`;
+  } else if(cloudEnabled()){
+    accountCard = `<div class="card mb12"><div class="section-ttl"><i class="ti ti-cloud"></i> Account</div><div class="txt-sec">Not logged in. <a data-action="openLogin" style="color:var(--green-mid);font-weight:600;cursor:pointer">Log in</a> to sync your data.</div></div>`;
+  } else {
+    accountCard = `<div class="card mb12" style="background:#fff8f0;border-color:var(--amber)"><div class="section-ttl"><i class="ti ti-cloud-off"></i> Cloud sync not set up</div><div class="txt-sec" style="font-size:13px">This device is storing data locally only, so it won't appear on your other devices. Add your Supabase keys in the code (top of the script) to enable login &amp; cross-device sync.</div></div>`;
+  }
   document.getElementById('page-settings').innerHTML = `
-    <div class="page-head"><div><h1>Settings</h1><div class="sub">Stores, recurring items, budgets &amp; data</div></div></div>
+    <div class="page-head"><div><h1>Settings</h1><div class="sub">Account, stores, recurring items, budgets &amp; data</div></div></div>
+    ${accountCard}
     <div class="card mb12"><div class="section-ttl"><i class="ti ti-building-store"></i> My stores</div>
       <div>${storePills}</div>
       <div class="row-flex mt12"><input class="input" id="new-store-input" placeholder="Add a store…" style="max-width:280px" autocomplete="off"><button class="btn btn-primary" data-action="addStore"><i class="ti ti-plus"></i> Add store</button></div>
@@ -1098,6 +1225,7 @@ function renderSettings(){
   document.querySelectorAll('[data-budget-month]').forEach(inp=>{
     inp.addEventListener('blur',()=>{ const mk=inp.dataset.budgetMonth; const v=parseFloat(inp.value); if(!isNaN(v)){ STATE.budgets[mk]=v; save(); renderSidebarBottom(); showToast('Budget updated'); renderSettings(); } });
   });
+  if(cloudEnabled() && CUR_USER) setCloudStatus('synced');
 }
 
 /* ===================== TOAST / MODAL ===================== */
@@ -1300,6 +1428,28 @@ const ACTIONS = {
     save(); closeModal(); showToast('Recurring item added'); renderSettings(); renderSidebarBottom();
   },
   deleteRecurring(el){ STATE.recurring=STATE.recurring.filter(x=>x.id!==el.dataset.id); save(); renderSettings(); renderSidebarBottom(); },
+  authToggle(){ authMode = authMode==='login'?'signup':'login'; renderAuthCard(); },
+  async authSubmit(){
+    if(!SB) return;
+    const email=document.getElementById('auth-email').value.trim();
+    const pass=document.getElementById('auth-pass').value;
+    if(!email || !pass){ authMsg('Enter your email and password'); return; }
+    authMsg(authMode==='login'?'Logging in…':'Creating account…', true);
+    try{
+      if(authMode==='login'){
+        const { error } = await SB.auth.signInWithPassword({ email, password:pass });
+        if(error){ authMsg(error.message); return; }
+        showToast('Logged in');
+      } else {
+        const { data, error } = await SB.auth.signUp({ email, password:pass });
+        if(error){ authMsg(error.message); return; }
+        if(data.session){ showToast('Account created'); }
+        else { authMode='login'; renderAuthCard(); authMsg('Account created — check your email to confirm, then log in.', true); }
+      }
+    }catch(e){ authMsg(e.message||'Something went wrong'); }
+  },
+  logout(){ doLogout(); },
+  openLogin(){ showAuthOverlay(); },
   resetData(){ if(confirm('Reset everything to sample data? This will overwrite your current data.')){ resetToSampleData(); showToast('Sample data restored'); goTo('dashboard'); } },
   clearData(){ if(confirm('Clear ALL data? This cannot be undone.')){ Object.assign(STATE,{ expenses:[], groceryList:[], recurring:[], budgets:{}, stores:[], funExpenses:[], wishlist:[], funBudgets:{} }); save(); showToast('All data cleared'); goTo('dashboard'); } }
 };
@@ -1325,9 +1475,10 @@ function exportCSV(){
 }
 
 /* ===================== INIT ===================== */
-document.addEventListener('DOMContentLoaded',()=>{
+document.addEventListener('DOMContentLoaded',async()=>{
   load();
   goTo('dashboard');
+  try{ await initCloud(); }catch(e){ console.error('Cloud init failed:', e); }
 });
 </script>
 </body>
