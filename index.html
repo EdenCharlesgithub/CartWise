@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CartWise — Expense Tracker</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+<style>
+:root{
+--bg:#f2f5f2; --sidebar:#1a3328; --sidebar-hover:#2a4a3a; --sidebar-fun-hover:#3a2a4a;
+--card:#fff; --border:#e0ece4; --green-dark:#1a3328; --green-mid:#2d6a4f; --amber:#E8A838;
+--muted:#8BAF93; --secondary:#5a7a6a; --purple:#7b2d8b; --purple-light:#faf5ff;
+--purple-border:#e9d5ff; --red:#c1121f; --text:#1a3328;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5}
+.ti{line-height:1!important;vertical-align:middle}
+#app{display:flex;min-height:100vh}
+
+/* ---------- Sidebar ---------- */
+#sidebar{width:248px;min-width:248px;background:var(--sidebar);color:#dbe8df;display:flex;flex-direction:column;padding:18px 14px;position:sticky;top:0;height:100vh}
+.logo{display:flex;align-items:center;gap:10px;padding:6px 8px 18px}
+.logo .mark{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--green-mid),var(--amber));display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px}
+.logo .name{font-weight:700;font-size:18px;color:#fff;letter-spacing:.3px}
+.logo .name span{color:var(--amber)}
+.nav-btn{display:flex;align-items:center;gap:11px;width:100%;border:none;background:transparent;color:#c4d6ca;padding:9px 12px;border-radius:9px;font-size:14px;font-family:inherit;cursor:pointer;text-align:left;margin-bottom:2px;position:relative;transition:background .12s,color .12s}
+.nav-btn i{font-size:18px}
+.nav-btn:hover{background:var(--sidebar-hover);color:#fff}
+.nav-btn.active{background:var(--sidebar-hover);color:#fff;font-weight:600}
+.nav-btn.fun:hover{background:var(--sidebar-fun-hover)}
+.nav-btn.fun.active{background:var(--sidebar-fun-hover);color:#fff}
+.nav-pill{margin-left:auto;background:var(--red);color:#fff;border-radius:20px;font-size:11px;font-weight:700;padding:1px 7px;min-width:18px;text-align:center}
+.nav-divider{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);padding:14px 12px 6px;font-weight:600}
+.nav-line{height:1px;background:rgba(255,255,255,.08);margin:12px 8px}
+.side-bottom{margin-top:auto;background:rgba(255,255,255,.05);border-radius:12px;padding:14px}
+.side-bottom .ttl{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:8px}
+.side-bottom .row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:13px}
+.side-bottom .row .v{font-weight:700}
+.mini-bar{height:6px;border-radius:4px;background:rgba(255,255,255,.12);overflow:hidden;margin-top:8px}
+.mini-bar > div{height:100%;border-radius:4px;background:var(--amber)}
+
+/* ---------- Main ---------- */
+#main{flex:1;min-width:0;padding:30px 36px 60px;max-width:1280px}
+.page{display:none;animation:fade .2s ease}
+.page.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+.page-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:22px;flex-wrap:wrap;gap:12px}
+.page-head h1{font-size:25px;font-weight:700}
+.page-head .sub{color:var(--secondary);font-size:13px;margin-top:2px}
+
+/* ---------- Cards ---------- */
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px}
+.section-ttl{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--secondary);margin-bottom:12px;display:flex;align-items:center;gap:7px}
+.grid{display:grid;gap:16px}
+.grid-4{grid-template-columns:repeat(4,1fr)}
+.grid-2{grid-template-columns:repeat(2,1fr)}
+.grid-3{grid-template-columns:repeat(3,1fr)}
+@media(max-width:1000px){.grid-4{grid-template-columns:repeat(2,1fr)}.grid-2,.grid-3{grid-template-columns:1fr}}
+
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px 18px}
+.kpi .k-label{font-size:12px;color:var(--secondary);text-transform:uppercase;letter-spacing:.5px;font-weight:600;display:flex;align-items:center;gap:6px}
+.kpi .k-val{font-size:27px;font-weight:700;margin-top:8px}
+.kpi .k-sub{font-size:12px;color:var(--secondary);margin-top:3px}
+.kpi.purple{border-color:var(--purple-border);background:var(--purple-light)}
+.pos{color:var(--green-mid)}.neg{color:var(--red)}
+
+/* ---------- Badges / tags ---------- */
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:600;background:#eef4f0;color:var(--green-mid)}
+.cat-badge{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:600;background:#eef4f0;color:var(--secondary)}
+
+/* ---------- Buttons ---------- */
+.btn{font-family:inherit;font-size:13px;font-weight:600;border-radius:9px;padding:8px 14px;border:1px solid var(--border);background:#fff;color:var(--text);cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:.12s}
+.btn:hover{border-color:var(--green-mid)}
+.btn i{font-size:16px}
+.btn-primary{background:var(--green-mid);border-color:var(--green-mid);color:#fff}
+.btn-primary:hover{background:#245c43}
+.btn-purple{background:var(--purple);border-color:var(--purple);color:#fff}
+.btn-purple:hover{background:#682376}
+.btn-ghost{background:transparent;border-color:transparent;color:var(--secondary)}
+.btn-ghost:hover{background:#eef4f0;border-color:transparent}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-danger{color:var(--red);border-color:#f0c9cc}
+.btn-danger:hover{background:#fdf0f1;border-color:var(--red)}
+
+/* ---------- Inputs ---------- */
+.input,.select{font-family:inherit;font-size:14px;padding:9px 11px;border:1px solid var(--border);border-radius:9px;background:#fff;color:var(--text);width:100%;outline:none}
+.input:focus,.select:focus{border-color:var(--green-mid);box-shadow:0 0 0 3px rgba(45,106,79,.1)}
+.label{font-size:12px;font-weight:600;color:var(--secondary);margin-bottom:5px;display:block}
+.field{display:flex;flex-direction:column}
+
+/* ---------- Tables ---------- */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:9px 10px;color:var(--secondary);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid var(--border)}
+td{padding:9px 10px;border-bottom:1px solid var(--border)}
+tbody tr:nth-child(even){background:#f8faf8}
+tbody tr:hover{background:#eef4f0}
+.tbl-wrap{overflow-x:auto}
+
+/* ---------- Tabs ---------- */
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.tab{padding:6px 13px;border-radius:8px;background:#fff;border:1px solid var(--border);font-size:13px;font-weight:600;cursor:pointer;color:var(--secondary);font-family:inherit}
+.tab:hover{border-color:var(--green-mid)}
+.tab.active{background:var(--green-dark);color:#fff;border-color:var(--green-dark)}
+.fun-tabs{display:flex;gap:18px;border-bottom:1px solid var(--border);margin-bottom:20px}
+.fun-tab{padding:9px 2px;background:none;border:none;border-bottom:2px solid transparent;font-family:inherit;font-size:14px;font-weight:600;color:var(--secondary);cursor:pointer}
+.fun-tab.active{color:var(--purple);border-bottom:2px solid var(--purple)}
+.fun-pill{padding:5px 12px;border-radius:20px;background:#fff;border:1px solid var(--purple-border);color:var(--purple);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+.fun-pill.active{background:var(--purple);color:#fff;border-color:var(--purple)}
+
+/* ---------- Bars ---------- */
+.bar-row{margin-bottom:10px}
+.bar-top{display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px}
+.bar-top .amt{font-weight:700}
+.bar-track{height:9px;background:#eef4f0;border-radius:6px;overflow:hidden}
+.bar-track > div{height:100%;border-radius:6px}
+
+.budget-bar{position:relative;height:30px;background:#eef4f0;border-radius:8px;overflow:hidden;margin:10px 0}
+.budget-bar .fill{height:100%;background:linear-gradient(90deg,var(--green-mid),var(--amber))}
+.budget-bar .marker{position:absolute;top:0;bottom:0;border-left:2px dashed #1a3328aa}
+.budget-bar.purple .fill{background:linear-gradient(90deg,var(--purple),#c77dff)}
+.budget-labels{display:flex;justify-content:space-between;font-size:12px;color:var(--secondary)}
+
+.daychart{display:flex;align-items:flex-end;gap:3px;height:96px;padding-top:8px}
+.daychart .day{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%}
+.daychart .day .bar{width:100%;border-radius:3px 3px 0 0;background:#7fb89a;min-height:2px}
+.daychart .day .num{font-size:9px;color:var(--muted);margin-top:3px;height:10px}
+
+.momchart{display:flex;align-items:flex-end;gap:14px;height:130px;position:relative;padding:18px 6px 0}
+.momchart .mbar{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;position:relative;z-index:2}
+.momchart .mbar .val{font-size:11px;font-weight:700;margin-bottom:3px}
+.momchart .mbar .bar{width:60%;max-width:48px;background:var(--green-mid);border-radius:5px 5px 0 0;min-height:2px}
+.momchart .mbar .lbl{font-size:11px;color:var(--secondary);margin-top:6px;text-align:center}
+.momchart .budline{position:absolute;left:6px;right:6px;border-top:2px dashed var(--amber);z-index:1}
+
+.stackchart{display:flex;align-items:flex-end;gap:16px;height:150px;padding-top:10px}
+.stackchart .sbar{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.stackchart .seg{width:62%;max-width:54px}
+.stackchart .seg.g{background:var(--green-mid)}
+.stackchart .seg.f{background:#c77dff;border-radius:5px 5px 0 0}
+.stackchart .lbl{font-size:11px;color:var(--secondary);margin-top:6px}
+
+/* ---------- Alert banner ---------- */
+.alert-banner{background:#fff8f0;border:1px solid var(--amber);border-radius:12px;padding:14px 16px;margin-bottom:18px}
+.alert-banner .a-item{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:13px}
+.alert-banner .a-item:not(:last-child){border-bottom:1px solid #f3e3c9}
+
+/* ---------- List rows ---------- */
+.list-row{display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid var(--border)}
+.list-row .grow{flex:1;min-width:0}
+.list-row .sub{font-size:12px;color:var(--secondary)}
+.chk{width:20px;height:20px;border:2px solid var(--green-mid);border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}
+.chk.on{background:var(--green-mid)}
+.done{opacity:.65}
+.done .name-txt{text-decoration:line-through}
+.warn-line{color:var(--amber);font-size:12px;display:flex;align-items:center;gap:4px;margin-top:2px}
+
+/* store pills (settings) */
+.store-pill{display:inline-flex;align-items:center;gap:7px;padding:6px 8px 6px 12px;border-radius:20px;font-weight:600;font-size:13px;margin:0 8px 8px 0}
+.store-pill button{border:none;background:rgba(0,0,0,.08);width:18px;height:18px;border-radius:50%;cursor:pointer;color:inherit;display:flex;align-items:center;justify-content:center;font-size:12px}
+
+.dot{width:11px;height:11px;border-radius:50%;display:inline-block;flex-shrink:0}
+
+/* recurring card */
+.rec-card{border:1px solid var(--border);border-radius:12px;padding:14px;position:relative}
+.rec-prog{height:8px;background:#eef4f0;border-radius:5px;overflow:hidden;margin:10px 0 8px}
+.rec-prog > div{height:100%;background:var(--green-mid);border-radius:5px}
+.rec-prog > div.over{background:var(--amber)}
+.rec-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--secondary)}
+
+/* item hint */
+.hint{font-size:12px;color:var(--green-mid);margin-top:5px;font-weight:600}
+.hint.empty{display:none}
+
+.star-btn{background:none;border:none;font-size:24px;cursor:pointer;color:#ddd;padding:0 2px;font-family:inherit}
+.star-btn.on{color:var(--amber)}
+
+.empty-state{text-align:center;padding:40px 20px;color:var(--muted)}
+.empty-state i{font-size:40px;display:block;margin-bottom:10px;opacity:.5}
+
+.rec-item-card{border:1px solid var(--border);border-radius:12px;padding:14px}
+.rec-store-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;margin-top:6px;font-size:13px}
+.rec-store-row .nm{flex:1;font-weight:600}
+
+.quick-strip{background:#1a3328;border-radius:14px;padding:18px 20px;margin-bottom:22px;color:#fff}
+.quick-strip .qh{font-size:13px;color:#9fc4ac;margin-bottom:10px;display:flex;align-items:center;gap:7px}
+.quick-strip .qrow{display:flex;gap:10px}
+.quick-strip input{flex:1;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);color:#fff;border-radius:9px;padding:10px 13px;font-family:inherit;font-size:14px;outline:none}
+.quick-strip input::placeholder{color:#9fc4ac}
+
+/* ---------- Modal ---------- */
+#modal-overlay{position:fixed;inset:0;background:rgba(20,40,30,.45);backdrop-filter:blur(2px);display:none;align-items:flex-start;justify-content:center;padding:50px 16px;z-index:200;overflow-y:auto}
+#modal-overlay.visible{display:flex}
+#modal-card{background:#fff;border-radius:16px;width:100%;max-width:480px;padding:24px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+#modal-card h2{font-size:19px;margin-bottom:4px}
+.modal-x{float:right;cursor:pointer;color:var(--secondary);font-size:22px;line-height:1}
+.preset-pill{padding:7px 13px;border-radius:8px;border:1px solid var(--border);background:#fff;font-family:inherit;font-weight:600;font-size:13px;cursor:pointer;color:var(--secondary)}
+.preset-pill.active{background:var(--green-mid);color:#fff;border-color:var(--green-mid)}
+
+/* ---------- Toast ---------- */
+#toast{position:fixed;bottom:24px;right:24px;background:#1a3328;color:#fff;padding:13px 20px;border-radius:11px;font-weight:600;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.25);transform:translateY(80px);opacity:0;transition:.28s;z-index:300;display:flex;align-items:center;gap:9px}
+#toast.visible{transform:none;opacity:1}
+#toast i{color:var(--amber);font-size:18px}
+
+.spacer{height:16px}
+.row-flex{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.mt12{margin-top:12px}.mt16{margin-top:16px}.mb12{margin-bottom:12px}
+.txt-sec{color:var(--secondary)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:8px;font-size:12px}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#bcd2c4;border-radius:4px}
+</style>
+</head>
+<body>
+<div id="app">
+  <nav id="sidebar">
+    <div class="logo">
+      <div class="mark"><i class="ti ti-shopping-cart-bolt"></i></div>
+      <div class="name">Cart<span>Wise</span></div>
+    </div>
+    <button class="nav-btn" data-action="navigate" data-page="dashboard"><i class="ti ti-dashboard"></i> Dashboard <span class="nav-pill" id="nav-alert-pill" style="display:none"></span></button>
+    <button class="nav-btn" data-action="navigate" data-page="add"><i class="ti ti-circle-plus"></i> Add Purchase</button>
+    <button class="nav-btn" data-action="navigate" data-page="list"><i class="ti ti-shopping-cart"></i> Grocery List</button>
+    <button class="nav-btn" data-action="navigate" data-page="history"><i class="ti ti-history"></i> History</button>
+    <button class="nav-btn" data-action="navigate" data-page="analytics"><i class="ti ti-chart-line"></i> Analytics</button>
+    <button class="nav-btn" data-action="navigate" data-page="recommendations"><i class="ti ti-bulb"></i> Best Prices</button>
+    <div class="nav-divider">Life &amp; Fun</div>
+    <button class="nav-btn fun" data-action="navigate" data-page="fun"><i class="ti ti-confetti"></i> Fun Spending</button>
+    <div class="nav-line"></div>
+    <button class="nav-btn" data-action="navigate" data-page="settings"><i class="ti ti-settings"></i> Settings</button>
+    <div class="side-bottom" id="side-bottom"></div>
+  </nav>
+  <main id="main">
+    <div class="page" id="page-dashboard"></div>
+    <div class="page" id="page-add"></div>
+    <div class="page" id="page-list"></div>
+    <div class="page" id="page-history"></div>
+    <div class="page" id="page-analytics"></div>
+    <div class="page" id="page-recommendations"></div>
+    <div class="page" id="page-fun"></div>
+    <div class="page" id="page-settings"></div>
+  </main>
+</div>
+<div id="modal-overlay"><div id="modal-card"><div id="modal-body"></div></div></div>
+<div id="toast"></div>
+
+<script>
+/* ===================== STATE ===================== */
+const STATE = { expenses:[], groceryList:[], recurring:[], budgets:{}, stores:[], funExpenses:[], wishlist:[], funBudgets:{} };
+function save(){ localStorage.setItem('cartwise', JSON.stringify(STATE)); }
+function load(){ const r = localStorage.getItem('cartwise'); if(r) Object.assign(STATE, JSON.parse(r)); else resetToSampleData(); }
+
+/* ===================== CONSTANTS ===================== */
+const CATEGORIES =["Dairy","Bakery","Meat","Produce","Pantry","Frozen","Beverages","Snacks","Household","Other"];
+const UNITS = ["each","oz","lb","kg","g","fl oz","liter","gallon","dozen","pack"];
+const FUN_CATS = ["Dining Out","Coffee & Drinks","Shopping","Entertainment","Travel","Events","Self-Care","Other"];
+const FUN_CAT_COLORS = {"Dining Out":"#e76f51","Coffee & Drinks":"#c77dff","Shopping":"#0096c7","Entertainment":"#7b2d8b","Travel":"#2a9d8f","Events":"#e9740a","Self-Care":"#e63946","Other":"#888"};
+const FUN_CAT_ICONS = {"Dining Out":"ti-tools-kitchen-2","Coffee & Drinks":"ti-coffee","Shopping":"ti-shopping-bag","Entertainment":"ti-device-gamepad-2","Travel":"ti-plane","Events":"ti-ticket","Self-Care":"ti-heart","Other":"ti-sparkles"};
+const CAT_ICONS = {"Dairy":"ti-egg","Bakery":"ti-bread","Meat":"ti-meat","Produce":"ti-plant-2","Pantry":"ti-can","Frozen":"ti-snowflake","Beverages":"ti-bottle","Snacks":"ti-cookie","Household":"ti-home-2","Other":"ti-box"};
+
+/* ===================== UTILITIES ===================== */
+const today = () => new Date().toISOString().split('T')[0];
+const fmt$ = n => '$' + Number(n).toFixed(2);
+const monthKey = d => d.slice(0,7);
+const monthLabel = k => { const [y,m]=k.split('-'); return new Date(+y,+m-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'}); };
+function genId(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+const STORE_COLORS = {"Trader Joe's":"#2d6a4f","Whole Foods":"#40916c","Walmart":"#1d3557","Costco":"#c1121f","ShopRite":"#e9740a","Aldi":"#6a4c93","Target":"#d62828"};
+const EXTRA_COLORS = ["#0077b6","#7b2d8b","#c77dff","#0096c7","#48cae4","#023e8a","#d4a373","#6d6875","#457b9d","#2a9d8f"];
+function hashColor(s){ let h=0; for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))&0xfffffff; return EXTRA_COLORS[h%EXTRA_COLORS.length]; }
+function storeColor(s){ return STORE_COLORS[s]||hashColor(s||'?'); }
+function storeTag(s){ const c=storeColor(s); return `<span class="badge" style="background:${c}22;color:${c}">${esc(s)}</span>`; }
+function stars(n){ return '<span style="color:#E8A838">'+'★'.repeat(n)+'</span><span style="color:#ddd">'+'★'.repeat(5-n)+'</span>'; }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function daysInMonthOf(key){ const [y,m]=key.split('-'); return new Date(+y,+m,0).getDate(); }
+function dateDiffDays(a,b){ return Math.round((new Date(b)-new Date(a))/86400000); }
+function addDays(d,n){ const dt=new Date(d+'T00:00:00'); dt.setDate(dt.getDate()+n); return dt.toISOString().split('T')[0]; }
+// Free-text store entry: remember any store the user types so it's offered as a suggestion next time.
+function rememberStore(s){ s=(s||'').trim(); if(s && !STATE.stores.some(x=>x.toLowerCase()===s.toLowerCase())){ STATE.stores.push(s); return true; } return false; }
+function storeDatalist(id){ return `<datalist id="${id}">${STATE.stores.map(s=>`<option value="${esc(s)}"></option>`).join('')}</datalist>`; }
+
+/* ===================== SAMPLE DATA ===================== */
+function resetToSampleData(){
+  STATE.expenses=[]; STATE.funExpenses=[];
+  // item meta: [category, unit]
+  const META = {
+    Milk:["Dairy","gallon"], Eggs:["Dairy","dozen"], Bread:["Bakery","each"],
+    "Chicken Breast":["Meat","lb"], Rice:["Pantry","lb"], Banana:["Produce","lb"],
+    Yogurt:["Dairy","each"], Pasta:["Pantry","each"], "Cheddar Cheese":["Dairy","oz"],
+    "Orange Juice":["Beverages","each"], Spinach:["Produce","oz"], "Oat Milk":["Beverages","each"],
+    "Frozen Pizza":["Frozen","each"], "Ground Beef":["Meat","lb"], Tomatoes:["Produce","lb"]
+  };
+  // [item, date, qty, price, store, meal, note]
+  const G = [
+    ["Milk","2025-04-05",1,3.49,"Walmart","Breakfast",""],
+    ["Milk","2025-04-21",1,3.99,"Whole Foods","Breakfast",""],
+    ["Milk","2025-05-08",1,3.29,"Aldi","Breakfast",""],
+    ["Milk","2025-05-22",1,3.59,"Walmart","Breakfast",""],
+    ["Milk","2025-06-04",1,3.69,"ShopRite","Breakfast",""],
+    ["Eggs","2025-04-05",1,4.49,"Whole Foods","Breakfast","cage-free"],
+    ["Eggs","2025-04-19",1,3.79,"Aldi","Breakfast",""],
+    ["Eggs","2025-05-10",1,3.99,"Walmart","Breakfast",""],
+    ["Eggs","2025-06-01",1,4.19,"ShopRite","Breakfast",""],
+    ["Bread","2025-04-07",1,2.99,"Aldi","",""],
+    ["Bread","2025-04-26",1,3.99,"Whole Foods","","sourdough"],
+    ["Bread","2025-05-15",1,2.49,"Walmart","",""],
+    ["Bread","2025-06-06",1,3.49,"Trader Joe's","",""],
+    ["Chicken Breast","2025-04-10",2,4.99,"Costco","Dinner",""],
+    ["Chicken Breast","2025-04-28",1,6.49,"Whole Foods","Dinner",""],
+    ["Chicken Breast","2025-05-12",2,5.29,"ShopRite","Dinner",""],
+    ["Chicken Breast","2025-06-03",2,4.79,"Costco","Dinner",""],
+    ["Rice","2025-04-12",1,2.79,"Walmart","",""],
+    ["Rice","2025-05-02",1,8.99,"Costco","","20lb bag"],
+    ["Rice","2025-05-30",1,3.19,"ShopRite","",""],
+    ["Banana","2025-04-06",2,0.59,"Trader Joe's","Snack",""],
+    ["Banana","2025-04-24",3,0.49,"Aldi","Snack",""],
+    ["Banana","2025-05-18",2,0.69,"Whole Foods","Snack",""],
+    ["Banana","2025-06-08",3,0.55,"Walmart","Snack",""],
+    ["Yogurt","2025-04-09",4,1.29,"Aldi","Breakfast",""],
+    ["Yogurt","2025-04-27",4,1.79,"Whole Foods","Breakfast","greek"],
+    ["Yogurt","2025-05-20",6,1.19,"Trader Joe's","Breakfast",""],
+    ["Yogurt","2025-06-05",4,1.49,"ShopRite","Breakfast",""],
+    ["Pasta","2025-04-11",2,1.49,"Walmart","Dinner",""],
+    ["Pasta","2025-05-06",2,1.99,"Whole Foods","Dinner",""],
+    ["Pasta","2025-05-28",3,0.99,"Aldi","Dinner",""],
+    ["Cheddar Cheese","2025-04-14",8,3.49,"Costco","",""],
+    ["Cheddar Cheese","2025-05-09",8,4.29,"Whole Foods","",""],
+    ["Cheddar Cheese","2025-06-02",8,3.79,"ShopRite","",""],
+    ["Orange Juice","2025-04-08",1,3.99,"ShopRite","Breakfast",""],
+    ["Orange Juice","2025-04-30",1,4.49,"Whole Foods","Breakfast","fresh squeezed"],
+    ["Orange Juice","2025-05-25",1,3.49,"Walmart","Breakfast",""],
+    ["Spinach","2025-04-13",5,2.49,"Trader Joe's","Dinner",""],
+    ["Spinach","2025-05-04",5,2.99,"Whole Foods","Dinner","organic"],
+    ["Spinach","2025-05-27",5,1.99,"Aldi","Dinner",""],
+    ["Spinach","2025-06-07",5,2.29,"ShopRite","Dinner",""],
+    ["Oat Milk","2025-04-15",1,3.99,"Trader Joe's","Breakfast",""],
+    ["Oat Milk","2025-05-05",1,4.49,"Whole Foods","Breakfast","barista"],
+    ["Oat Milk","2025-05-29",1,3.79,"Target","Breakfast",""],
+    ["Frozen Pizza","2025-04-17",2,4.99,"Walmart","Dinner",""],
+    ["Frozen Pizza","2025-05-11",2,5.99,"Whole Foods","Dinner",""],
+    ["Frozen Pizza","2025-06-09",3,3.99,"Aldi","Dinner",""],
+    ["Ground Beef","2025-04-18",1,5.49,"ShopRite","Dinner",""],
+    ["Ground Beef","2025-05-07",2,4.99,"Costco","Dinner",""],
+    ["Ground Beef","2025-05-26",1,6.29,"Whole Foods","Dinner","grass-fed"],
+    ["Ground Beef","2025-06-10",2,5.19,"Walmart","Dinner",""],
+    ["Tomatoes","2025-04-20",2,1.99,"Trader Joe's","",""],
+    ["Tomatoes","2025-05-14",2,2.49,"Whole Foods","","heirloom"],
+    ["Tomatoes","2025-06-06",3,1.79,"ShopRite","",""]
+  ];
+  G.forEach(([item,date,qty,price,store,meal,note])=>{
+    const m = META[item];
+    STATE.expenses.push({ id:genId(), date, item, qty, price, store, category:m[0], unit:m[1], note, meal });
+  });
+
+  // [date, what, place, category, amount, rating, note]
+  const F = [
+    ["2025-04-04","Omakase dinner","Nobu","Dining Out",185,5,"birthday treat"],
+    ["2025-04-06","Brunch","Sadelle's","Dining Out",62,4,""],
+    ["2025-04-09","Tonkotsu ramen","Ichiran","Dining Out",28,5,""],
+    ["2025-04-12","Sushi tasting","Masa","Dining Out",320,5,"big splurge"],
+    ["2025-04-15","Coal-oven pizza","Lucali","Dining Out",45,5,""],
+    ["2025-04-18","Mediterranean lunch","Jack's Wife Freda","Dining Out",38,4,""],
+    ["2025-04-22","Tacos","Los Tacos No.1","Dining Out",16,5,""],
+    ["2025-04-25","Pour-over coffee","Blue Bottle","Coffee & Drinks",6.5,4,""],
+    ["2025-04-28","Latte","Starbucks","Coffee & Drinks",5.75,3,""],
+    ["2025-05-02","Iced matcha","Cha Cha Matcha","Coffee & Drinks",7,4,""],
+    ["2025-05-05","Cappuccino","Gregorys","Coffee & Drinks",4.95,3,""],
+    ["2025-05-08","Oat latte","Blank Street Coffee","Coffee & Drinks",5.5,4,""],
+    ["2025-05-10","Summer dress","Zara","Shopping",59.9,4,""],
+    ["2025-05-12","Running shoes","Nike","Shopping",129.99,5,""],
+    ["2025-05-15","Basics haul","H&M","Shopping",44.5,3,""],
+    ["2025-05-18","Used novels","Strand Bookstore","Shopping",27,5,"3 paperbacks"],
+    ["2025-05-21","Movie night","AMC","Entertainment",18.5,4,""],
+    ["2025-05-23","Music subscription","Spotify","Entertainment",11.99,5,"monthly"],
+    ["2025-05-26","Modern art exhibit","MoMA","Entertainment",25,5,""],
+    ["2025-05-29","Bowling with friends","Bowlero","Entertainment",34,4,""],
+    ["2025-06-01","Stand-up show","Comedy Cellar","Events",55,5,"2 tickets"],
+    ["2025-06-03","Gel manicure","Gloss Nail Bar","Self-Care",48,4,""],
+    ["2025-06-05","Monthly membership","Equinox","Self-Care",185,4,""],
+    ["2025-06-07","Infrared facial","Heyday","Self-Care",75,5,""],
+    ["2025-06-09","Weekend getaway","Hudson NY","Travel",240,5,"airbnb + train"],
+    ["2025-06-11","Espresso & pastry","Blue Bottle","Coffee & Drinks",9.5,4,""]
+  ];
+  F.forEach(([date,what,place,category,amount,rating,note])=>{
+    STATE.funExpenses.push({ id:genId(), date, what, place, category, amount, rating, note });
+  });
+
+  STATE.groceryList = [
+    { id:genId(), item:"Avocados", qty:3, store:"Trader Joe's", note:"ripe", done:false },
+    { id:genId(), item:"Paper towels", qty:1, store:"Costco", note:"", done:false },
+    { id:genId(), item:"Coffee beans", qty:1, store:"Whole Foods", note:"", done:true }
+  ];
+  STATE.recurring = [
+    { id:genId(), item:"Milk", store:"Walmart", category:"Dairy", interval:14, lastBought:"2025-06-04" },
+    { id:genId(), item:"Eggs", store:"Aldi", category:"Dairy", interval:14, lastBought:"2025-06-01" }
+  ];
+  STATE.budgets = { "2025-06":250, "2025-05":220, "2025-04":200 };
+  STATE.stores = [];
+  STATE.wishlist = [
+    { id:genId(), what:"Omakase tasting", place:"Masa", category:"Dining Out", note:"special occasion", done:false },
+    { id:genId(), what:"Concert", place:"Madison Square Garden", category:"Events", note:"summer tour", done:false },
+    { id:genId(), what:"Weekend trip", place:"Hudson NY", category:"Travel", note:"fall foliage", done:false }
+  ];
+  STATE.funBudgets = { "2025-06":200, "2025-05":180, "2025-04":160 };
+  save();
+}
+
+/* ===================== DERIVED HELPERS ===================== */
+function buildRecMap(){
+  const map = {};
+  STATE.expenses.forEach(e=>{
+    if(!map[e.item]) map[e.item]={};
+    if(!map[e.item][e.store]) map[e.item][e.store]={ sum:0, count:0, prices:[], dates:[] };
+    const s = map[e.item][e.store];
+    s.sum += e.price; s.count++; s.prices.push(e.price); s.dates.push(e.date);
+  });
+  Object.keys(map).forEach(item=>{
+    const stores = map[item];
+    let best=null;
+    Object.keys(stores).forEach(st=>{
+      const s = stores[st];
+      s.avgPrice = s.sum/s.count;
+      const order = s.dates.map((d,i)=>({d,p:s.prices[i]})).sort((a,b)=>a.d.localeCompare(b.d));
+      s.trend = order[order.length-1].p - order[0].p;
+      if(!best || s.avgPrice < stores[best].avgPrice) best = st;
+    });
+    map[item].__best = best;
+  });
+  return map;
+}
+function itemStores(item, map){ return Object.keys(map[item]).filter(k=>k!=='__best'); }
+function monthExpenses(key){ return STATE.expenses.filter(e=>monthKey(e.date)===key); }
+function monthTotal(key){ return monthExpenses(key).reduce((s,e)=>s+e.price*e.qty,0); }
+function funMonthExpenses(key){ return STATE.funExpenses.filter(e=>monthKey(e.date)===key); }
+function funMonthTotal(key){ return funMonthExpenses(key).reduce((s,e)=>s+e.amount,0); }
+function curMonth(){ return today().slice(0,7); }
+function recurringDueDate(r){ return addDays(r.lastBought, r.interval); }
+function recurringOverdue(r){ return recurringDueDate(r) <= today(); }
+function potentialSavings(key){
+  const map = buildRecMap();
+  let total=0;
+  monthExpenses(key).forEach(e=>{
+    const st = map[e.item]; if(!st) return;
+    const best = st.__best;
+    if(best && map[e.item][best].avgPrice < e.price){
+      total += (e.price - map[e.item][best].avgPrice) * e.qty;
+    }
+  });
+  return total;
+}
+function priceAlerts(){
+  const alerts=[];
+  const byItemStore={};
+  STATE.expenses.forEach(e=>{
+    const k=e.item+'@@'+e.store;
+    if(!byItemStore[k]) byItemStore[k]={prices:[],dates:[],item:e.item,store:e.store};
+    byItemStore[k].prices.push(e.price); byItemStore[k].dates.push(e.date);
+  });
+  Object.values(byItemStore).forEach(g=>{
+    if(g.prices.length<2) return;
+    const order=g.dates.map((d,i)=>({d,p:g.prices[i]})).sort((a,b)=>a.d.localeCompare(b.d));
+    const latest=order[order.length-1].p;
+    const hist=order.slice(0,-1);
+    const avg=hist.reduce((s,o)=>s+o.p,0)/hist.length;
+    if(latest > avg*1.15){
+      alerts.push({item:g.item,store:g.store,pct:Math.round((latest/avg-1)*100),latest,avg});
+    }
+  });
+  return alerts;
+}
+function alertCount(){ return priceAlerts().length + STATE.recurring.filter(recurringOverdue).length; }
+
+/* ===================== NAV / RENDER DISPATCH ===================== */
+function goTo(pageId){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+pageId).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.page===pageId));
+  render(pageId);
+  renderSidebarBottom();
+  window.scrollTo(0,0);
+}
+function render(p){ ({dashboard:renderDashboard,add:renderAdd,list:renderList,history:renderHistory,analytics:renderAnalytics,recommendations:renderRecommendations,fun:renderFun,settings:renderSettings})[p]?.(); }
+
+function renderSidebarBottom(){
+  const mk = curMonth();
+  const gTot = monthTotal(mk), fTot = funMonthTotal(mk);
+  const budget = STATE.budgets[mk]||0;
+  const pct = budget? Math.min(100,(gTot/budget)*100) : 0;
+  document.getElementById('side-bottom').innerHTML = `
+    <div class="ttl">This month</div>
+    <div class="row"><span>Groceries</span><span class="v" style="color:var(--amber)">${fmt$(gTot)}</span></div>
+    <div class="row"><span>Fun</span><span class="v" style="color:#c77dff">${fmt$(fTot)}</span></div>
+    ${budget?`<div class="mini-bar"><div style="width:${pct}%"></div></div>
+    <div class="row" style="margin-top:7px;font-size:11px;color:var(--muted)"><span>Grocery budget</span><span>${fmt$(budget)}</span></div>`:''}`;
+  const c = alertCount();
+  const pill = document.getElementById('nav-alert-pill');
+  if(c>0){ pill.style.display='inline-block'; pill.textContent=c; } else pill.style.display='none';
+}
+
+/* ===================== DASHBOARD ===================== */
+function renderDashboard(){
+  const mk = curMonth();
+  const exps = monthExpenses(mk);
+  const curTotal = monthTotal(mk);
+  const dim = daysInMonthOf(mk);
+  const now = new Date(today());
+  const dayOfMonth = now.getDate();
+  const forecast = dayOfMonth>0 ? curTotal/dayOfMonth*dim : 0;
+  const lastKey = (()=>{ const [y,m]=mk.split('-'); return new Date(+y,+m-2,1).toISOString().slice(0,7); })();
+  const lastTotal = monthTotal(lastKey);
+  const diff = curTotal - lastTotal;
+  const savings = potentialSavings(mk);
+  const budget = STATE.budgets[mk]||0;
+
+  const alerts = priceAlerts();
+  const overdue = STATE.recurring.filter(recurringOverdue);
+  let alertHtml='';
+  if(alerts.length || overdue.length){
+    alertHtml = `<div class="alert-banner">`;
+    alerts.forEach(a=>{ alertHtml += `<div class="a-item"><i class="ti ti-alert-triangle" style="color:var(--amber)"></i> <span><b>${esc(a.item)}</b> at ${esc(a.store)} is <b>${a.pct}%</b> above your usual (${fmt$(a.latest)} vs ${fmt$(a.avg)} avg)</span></div>`; });
+    overdue.forEach(r=>{ alertHtml += `<div class="a-item"><i class="ti ti-refresh" style="color:var(--green-mid)"></i> <span><b>${esc(r.item)}</b> is due</span> <button class="btn btn-sm btn-primary" data-action="addRecurringToList" data-id="${r.id}"><i class="ti ti-plus"></i> Add to list</button></div>`; });
+    alertHtml += `</div>`;
+  }
+
+  const kpis = `<div class="grid grid-4 mb12">
+    <div class="kpi"><div class="k-label"><i class="ti ti-shopping-cart"></i> This month</div><div class="k-val">${fmt$(curTotal)}</div><div class="k-sub">${exps.length} purchases</div></div>
+    <div class="kpi"><div class="k-label"><i class="ti ti-trending-up"></i> Forecast</div><div class="k-val">${fmt$(forecast)}</div><div class="k-sub">projected for ${monthLabel(mk).split(' ')[0]}</div></div>
+    <div class="kpi"><div class="k-label"><i class="ti ti-arrows-diff"></i> vs last month</div><div class="k-val ${diff<=0?'pos':'neg'}">${diff<=0?'−':'+'}${fmt$(Math.abs(diff))}</div><div class="k-sub">${fmt$(lastTotal)} last month</div></div>
+    <div class="kpi"><div class="k-label"><i class="ti ti-pig-money"></i> Potential savings</div><div class="k-val pos">${fmt$(savings)}</div><div class="k-sub">by switching stores</div></div>
+  </div>`;
+
+  let budgetHtml='';
+  if(budget){
+    const spentPct = Math.min(100,(curTotal/budget)*100);
+    const markPct = Math.min(100,(dayOfMonth/dim)*100);
+    const expected = budget*(dayOfMonth/dim);
+    let status, scolor;
+    if(curTotal>budget){ status='Over budget'; scolor='var(--red)'; }
+    else if(curTotal>expected){ status='Watch spending'; scolor='var(--amber)'; }
+    else { status='On track'; scolor='var(--green-mid)'; }
+    budgetHtml = `<div class="card mb12">
+      <div class="section-ttl"><i class="ti ti-target"></i> Monthly budget <span style="margin-left:auto;color:${scolor};text-transform:none;letter-spacing:0">${status}</span></div>
+      <div class="budget-bar"><div class="fill" style="width:${spentPct}%"></div><div class="marker" style="left:${markPct}%"></div></div>
+      <div class="budget-labels"><span>Spent ${fmt$(curTotal)}</span><span>Expected ${fmt$(expected)}</span><span>Budget ${fmt$(budget)}</span></div>
+    </div>`;
+  }
+
+  const daySpend = {};
+  for(let d=1;d<=dim;d++) daySpend[d]=0;
+  exps.forEach(e=>{ const d=+e.date.slice(8,10); daySpend[d]+=e.price*e.qty; });
+  const maxSpend = Math.max(...Object.values(daySpend),1);
+  const todayDay = now.getDate();
+  let dayBars='';
+  for(let d=1;d<=dim;d++){
+    const h = Math.max(2,(daySpend[d]/maxSpend)*80);
+    const col = d===todayDay?'#E8A838':(daySpend[d]===0?'#e8ede8':'#7fb89a');
+    dayBars += `<div class="day"><div class="bar" style="height:${h}px;background:${col}" title="${monthLabel(mk).split(' ')[0]} ${d}: ${fmt$(daySpend[d])}"></div><div class="num">${d%5===0?d:''}</div></div>`;
+  }
+  const dayChart = `<div class="card mb12"><div class="section-ttl"><i class="ti ti-calendar"></i> Daily spend</div><div class="daychart">${dayBars}</div></div>`;
+
+  const catTot={}, storeTot={};
+  exps.forEach(e=>{ catTot[e.category]=(catTot[e.category]||0)+e.price*e.qty; storeTot[e.store]=(storeTot[e.store]||0)+e.price*e.qty; });
+  const catBars = Object.entries(catTot).sort((a,b)=>b[1]-a[1]).map(([c,v])=>`
+    <div class="bar-row"><div class="bar-top"><span><i class="ti ${CAT_ICONS[c]||'ti-box'}"></i> ${c}</span><span class="amt">${fmt$(v)}</span></div>
+    <div class="bar-track"><div style="width:${(v/curTotal*100)||0}%;background:var(--green-mid)"></div></div></div>`).join('') || '<div class="txt-sec">No data yet</div>';
+  const storeBars = Object.entries(storeTot).sort((a,b)=>b[1]-a[1]).map(([s,v])=>`
+    <div class="bar-row"><div class="bar-top"><span>${esc(s)}</span><span class="amt">${fmt$(v)}</span></div>
+    <div class="bar-track"><div style="width:${(v/curTotal*100)||0}%;background:${storeColor(s)}"></div></div></div>`).join('') || '<div class="txt-sec">No data yet</div>';
+  const breakdown = `<div class="grid grid-2 mb12">
+    <div class="card"><div class="section-ttl"><i class="ti ti-chart-pie"></i> By category</div>${catBars}</div>
+    <div class="card"><div class="section-ttl"><i class="ti ti-building-store"></i> By store</div>${storeBars}</div>
+  </div>`;
+
+  const months = [...new Set(STATE.expenses.map(e=>monthKey(e.date)))].sort().reverse();
+  const monthCards = months.map(k=>{
+    const t=monthTotal(k); const b=STATE.budgets[k];
+    const over = b!=null? (t>b) : null;
+    return `<div class="card" style="cursor:pointer" data-action="goToHistoryMonth" data-month="${k}">
+      <div style="font-weight:700">${monthLabel(k)}</div>
+      <div style="font-size:22px;font-weight:700;margin:4px 0">${fmt$(t)}</div>
+      ${b!=null?`<div class="badge" style="background:${over?'#fdecec':'#eaf5ee'};color:${over?'var(--red)':'var(--green-mid)'}">${over?'Over by '+fmt$(t-b):'Under by '+fmt$(b-t)}</div>`:'<div class="txt-sec" style="font-size:12px">No budget set</div>'}
+    </div>`;
+  }).join('');
+  const monthGrid = `<div class="section-ttl mt16"><i class="ti ti-calendar-month"></i> Month by month</div><div class="grid grid-3">${monthCards}</div>`;
+
+  document.getElementById('page-dashboard').innerHTML = `
+    <div class="page-head">
+      <div><h1>${monthLabel(mk)}</h1><div class="sub">${new Date(today()).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})}</div></div>
+      <button class="btn btn-primary" data-action="openBudgetModal"><i class="ti ti-target"></i> Set budget</button>
+    </div>
+    ${alertHtml}${kpis}${budgetHtml}${dayChart}${breakdown}${monthGrid}`;
+}
+
+/* ===================== ADD PURCHASE ===================== */
+function renderAdd(){
+  const map = buildRecMap();
+  const catOpts = CATEGORIES.map(c=>`<option>${c}</option>`).join('');
+  const unitOpts = UNITS.map(u=>`<option>${u}</option>`).join('');
+  document.getElementById('page-add').innerHTML = `
+    <div class="page-head"><div><h1>Add Purchase</h1><div class="sub">Quick-add or use the full form</div></div></div>
+    <div class="quick-strip">
+      <div class="qh"><i class="ti ti-bolt"></i> Quick entry — type: item · qty · store · price &nbsp; (e.g. "Eggs 2 Aldi 4.99")</div>
+      <div class="qrow"><input id="quick-input" placeholder="Eggs 2 Aldi 4.99" autocomplete="off"><button class="btn btn-primary" data-action="submitQuick"><i class="ti ti-plus"></i> Add</button></div>
+    </div>
+    <div class="card">
+      <div class="section-ttl"><i class="ti ti-edit"></i> Full entry</div>
+      <div class="grid grid-2">
+        <div class="field"><label class="label">Date</label><input class="input" type="date" id="f-date" value="${today()}" max="${today()}"></div>
+        <div class="field"><label class="label">Store</label><input class="input" id="f-store" list="store-dl-add" placeholder="Type a store name" autocomplete="off">${storeDatalist('store-dl-add')}</div>
+        <div class="field" style="grid-column:1/-1"><label class="label">Item</label><input class="input" id="f-item" placeholder="e.g. Milk" autocomplete="off"><div class="hint empty" id="item-hint"></div></div>
+        <div class="field"><label class="label">Quantity</label><input class="input" type="number" id="f-qty" value="1" min="0" step="any"></div>
+        <div class="field"><label class="label">Price (per unit)</label><input class="input" type="number" id="f-price" placeholder="0.00" min="0" step="0.01"><div class="hint empty" id="price-preview"></div></div>
+        <div class="field"><label class="label">Unit</label><select class="select" id="f-unit">${unitOpts}</select></div>
+        <div class="field"><label class="label">Category</label><select class="select" id="f-category">${catOpts}</select></div>
+        <div class="field"><label class="label">Meal (optional)</label><input class="input" id="f-meal" placeholder="e.g. Dinner" autocomplete="off"></div>
+        <div class="field"><label class="label">Note (optional)</label><input class="input" id="f-note" placeholder="e.g. organic" autocomplete="off"></div>
+      </div>
+      <div class="mt16"><button class="btn btn-primary" data-action="submitAddForm"><i class="ti ti-device-floppy"></i> Save purchase</button></div>
+    </div>`;
+  const itemIn = document.getElementById('f-item');
+  itemIn.addEventListener('input',()=>{
+    const v=itemIn.value.trim();
+    const hint=document.getElementById('item-hint');
+    const match = Object.keys(map).find(k=>k.toLowerCase()===v.toLowerCase());
+    if(match && map[match].__best){
+      const b=map[match].__best;
+      hint.className='hint'; hint.innerHTML=`💡 Best price: <b>${esc(b)}</b> at ${fmt$(map[match][b].avgPrice)} avg`;
+    } else hint.className='hint empty';
+  });
+  const priceIn=document.getElementById('f-price'), qtyIn=document.getElementById('f-qty');
+  const upd=()=>{ const p=parseFloat(priceIn.value),q=parseFloat(qtyIn.value); const pre=document.getElementById('price-preview');
+    if(p>0){ pre.className='hint'; pre.innerHTML=`Total: <b>${fmt$(p*(q||1))}</b>`; } else pre.className='hint empty'; };
+  priceIn.addEventListener('input',upd); qtyIn.addEventListener('input',upd);
+}
+
+/* ===================== GROCERY LIST ===================== */
+function renderList(){
+  const map = buildRecMap();
+  const pending = STATE.groceryList.filter(i=>!i.done);
+  const done = STATE.groceryList.filter(i=>i.done);
+  const due = STATE.recurring.filter(recurringOverdue);
+
+  const dueStrip = due.length ? `<div class="card mb12" style="background:#eef7f1;border-color:#c3dece">
+    <div class="section-ttl" style="color:var(--green-mid)"><i class="ti ti-refresh"></i> Recurring due</div>
+    <div class="row-flex">${due.map(r=>`<button class="btn btn-sm" data-action="addRecurringToList" data-id="${r.id}"><i class="ti ti-plus"></i> ${esc(r.item)}</button>`).join('')}</div></div>`:'';
+
+  const pendingRows = pending.map(i=>{
+    const best = map[i.item]&&map[i.item].__best;
+    let warn='';
+    if(best && i.store && i.store!==best && map[i.item][best]){
+      warn=`<div class="warn-line"><i class="ti ti-bulb"></i> Cheaper at ${esc(best)} (${fmt$(map[i.item][best].avgPrice)} avg)</div>`;
+    }
+    return `<div class="list-row">
+      <span class="chk" data-action="toggleListItem" data-id="${i.id}"></span>
+      <div class="grow"><div class="name-txt"><b>${esc(i.item)}</b> ${i.qty>1?`<span class="txt-sec">×${i.qty}</span>`:''} ${i.note?`<span class="txt-sec">· ${esc(i.note)}</span>`:''}</div>${warn}</div>
+      ${i.store?storeTag(i.store):''}
+      <button class="btn btn-ghost btn-sm" data-action="removeListItem" data-id="${i.id}"><i class="ti ti-x"></i></button>
+    </div>`;
+  }).join('') || '<div class="empty-state"><i class="ti ti-shopping-cart-off"></i>Nothing pending — add an item above</div>';
+
+  const doneRows = done.length ? `<div class="label mt16">Done</div>`+done.map(i=>`<div class="list-row done">
+      <span class="chk on" data-action="toggleListItem" data-id="${i.id}"><i class="ti ti-check" style="font-size:13px"></i></span>
+      <div class="grow"><div class="name-txt"><b>${esc(i.item)}</b> ${i.qty>1?`×${i.qty}`:''}</div></div>
+      ${i.store?storeTag(i.store):''}
+      <button class="btn btn-ghost btn-sm" data-action="removeListItem" data-id="${i.id}"><i class="ti ti-x"></i></button>
+    </div>`).join('') : '';
+
+  document.getElementById('page-list').innerHTML = `
+    <div class="page-head">
+      <div><h1>Grocery List</h1><div class="sub">${pending.length} item${pending.length!==1?'s':''} pending</div></div>
+      <div class="row-flex">
+        <button class="btn" data-action="openTripMode"><i class="ti ti-map-2"></i> Trip mode</button>
+        <button class="btn btn-ghost" data-action="clearDone"><i class="ti ti-eraser"></i> Clear done</button>
+      </div>
+    </div>
+    ${dueStrip}
+    <div class="card mb12">
+      <div class="grid" style="grid-template-columns:2fr 70px 1.2fr 1.5fr auto;gap:10px;align-items:end">
+        <div class="field"><label class="label">Item</label><input class="input" id="li-item" placeholder="Add item" autocomplete="off"><div class="hint empty" id="li-hint"></div></div>
+        <div class="field"><label class="label">Qty</label><input class="input" id="li-qty" type="number" value="1" min="1"></div>
+        <div class="field"><label class="label">Store</label><input class="input" id="li-store" list="store-dl-list" placeholder="Type or leave blank" autocomplete="off">${storeDatalist('store-dl-list')}</div>
+        <div class="field"><label class="label">Note</label><input class="input" id="li-note" placeholder="optional" autocomplete="off"></div>
+        <button class="btn btn-primary" data-action="addListItem"><i class="ti ti-plus"></i> Add</button>
+      </div>
+    </div>
+    <div class="card">${pendingRows}${doneRows}</div>`;
+  const liItem=document.getElementById('li-item');
+  liItem.addEventListener('input',()=>{
+    const v=liItem.value.trim(); const hint=document.getElementById('li-hint');
+    const match=Object.keys(map).find(k=>k.toLowerCase()===v.toLowerCase());
+    if(match&&map[match].__best){ hint.className='hint'; hint.innerHTML=`💡 Best at ${esc(map[match].__best)} (${fmt$(map[match][map[match].__best].avgPrice)})`; }
+    else hint.className='hint empty';
+  });
+}
+
+/* ===================== HISTORY ===================== */
+let historyMonth = today().slice(0,7);
+function renderHistory(){
+  const months = [...new Set(STATE.expenses.map(e=>monthKey(e.date)))].sort().reverse();
+  if(!months.includes(historyMonth)) historyMonth = months[0]||today().slice(0,7);
+  const tabs = months.map(k=>`<button class="tab ${k===historyMonth?'active':''}" data-action="setHistoryMonth" data-month="${k}">${monthLabel(k)}</button>`).join('');
+  document.getElementById('page-history').innerHTML = `
+    <div class="page-head">
+      <div><h1>History</h1><div class="sub">Browse and search past purchases</div></div>
+      <button class="btn" data-action="exportCSV"><i class="ti ti-download"></i> Export CSV</button>
+    </div>
+    <div class="tabs">${tabs}</div>
+    <div class="card mb12" style="padding:12px"><input class="input" id="history-search" placeholder="Search item, store, note, meal…" autocomplete="off"></div>
+    <div class="card" id="history-table-wrap"></div>`;
+  document.getElementById('history-search').addEventListener('input',renderHistoryTable);
+  renderHistoryTable();
+}
+function renderHistoryTable(){
+  const q=(document.getElementById('history-search')?.value||'').toLowerCase().trim();
+  let rows = STATE.expenses.filter(e=>monthKey(e.date)===historyMonth);
+  if(q) rows = rows.filter(e=>[e.item,e.store,e.note,e.meal,e.category].some(f=>(f||'').toLowerCase().includes(q)));
+  rows.sort((a,b)=>b.date.localeCompare(a.date));
+  const wrap=document.getElementById('history-table-wrap');
+  if(!rows.length){ wrap.innerHTML=`<div class="empty-state"><i class="ti ti-receipt-off"></i>No purchases ${q?'match your search':'this month'}</div>`; return; }
+  const total = rows.reduce((s,e)=>s+e.price*e.qty,0);
+  wrap.innerHTML = `<div class="tbl-wrap"><table>
+    <thead><tr><th>Date</th><th>Item</th><th>Qty</th><th>Price</th><th>Total</th><th>Store</th><th>Category</th><th>Meal</th><th>Note</th><th></th></tr></thead>
+    <tbody>${rows.map(e=>`<tr>
+      <td>${e.date.slice(5)}</td><td><b>${esc(e.item)}</b></td><td>${e.qty}</td><td>${fmt$(e.price)}</td><td><b>${fmt$(e.price*e.qty)}</b></td>
+      <td>${storeTag(e.store)}</td><td><span class="cat-badge"><i class="ti ${CAT_ICONS[e.category]||'ti-box'}"></i>${esc(e.category)}</span></td>
+      <td class="txt-sec">${esc(e.meal||'—')}</td><td class="txt-sec">${esc(e.note||'')}</td>
+      <td><button class="btn btn-ghost btn-sm" data-action="deleteExpense" data-id="${e.id}"><i class="ti ti-trash"></i></button></td>
+    </tr>`).join('')}</tbody>
+    <tfoot><tr><td colspan="4" style="text-align:right;font-weight:700">Month total</td><td colspan="6" style="font-weight:700">${fmt$(total)}</td></tr></tfoot>
+  </table></div>`;
+}
+
+/* ===================== ANALYTICS ===================== */
+function renderAnalytics(){
+  const months = [...new Set(STATE.expenses.map(e=>monthKey(e.date)))].sort().reverse();
+  const opts = months.map(k=>`<option value="${k}">${monthLabel(k)}</option>`).join('');
+  document.getElementById('page-analytics').innerHTML = `
+    <div class="page-head"><div><h1>Analytics</h1><div class="sub">Trends, loyalty &amp; price history</div></div>
+    <select class="select" id="analytics-month" style="width:auto">${opts}</select></div>
+    <div id="analytics-content"></div>`;
+  document.getElementById('analytics-month').addEventListener('change',renderAnalyticsContent);
+  renderAnalyticsContent();
+}
+function renderAnalyticsContent(){
+  const sel=document.getElementById('analytics-month');
+  const mk = sel.value;
+  const months = [...new Set(STATE.expenses.map(e=>monthKey(e.date)))].sort();
+  const max = Math.max(...months.map(monthTotal),1);
+  const momBars = months.map(k=>{
+    const t=monthTotal(k); const h=(t/max)*80;
+    return `<div class="mbar"><div class="val">${fmt$(t)}</div><div class="bar" style="height:${Math.max(2,h)}px;${k===mk?'background:var(--amber)':''}"></div><div class="lbl">${monthLabel(k).split(' ')[0].slice(0,3)} '${k.slice(2,4)}</div></div>`;
+  }).join('');
+  const budForMk = STATE.budgets[mk];
+  const budLine = budForMk!=null ? `<div class="budline" style="bottom:${18+(budForMk/max)*80}px"></div>` : '';
+
+  const exps = monthExpenses(mk);
+  const loyalty={};
+  exps.forEach(e=>{ if(!loyalty[e.store]) loyalty[e.store]={dates:new Set(),total:0}; loyalty[e.store].dates.add(e.date); loyalty[e.store].total+=e.price*e.qty; });
+  const loyaltyRows = Object.entries(loyalty).sort((a,b)=>b[1].total-a[1].total).map(([s,d])=>`<tr><td>${storeTag(s)}</td><td>${d.dates.size} trip${d.dates.size!==1?'s':''}</td><td><b>${fmt$(d.total)}</b></td></tr>`).join('')||'<tr><td colspan="3" class="txt-sec">No data</td></tr>';
+
+  const catTot={}; exps.forEach(e=>catTot[e.category]=(catTot[e.category]||0)+e.price*e.qty);
+  const ctotal=Object.values(catTot).reduce((a,b)=>a+b,0)||1;
+  const catBars = Object.entries(catTot).sort((a,b)=>b[1]-a[1]).map(([c,v])=>`
+    <div class="bar-row"><div class="bar-top"><span><i class="ti ${CAT_ICONS[c]||'ti-box'}"></i> ${c}</span><span class="amt">${fmt$(v)}</span></div>
+    <div class="bar-track"><div style="width:${v/ctotal*100}%;background:var(--green-mid)"></div></div></div>`).join('')||'<div class="txt-sec">No data</div>';
+
+  const mealTot={}; exps.forEach(e=>{ if(e.meal) mealTot[e.meal]=(mealTot[e.meal]||0)+e.price*e.qty; });
+  const mealCards = Object.entries(mealTot).sort((a,b)=>b[1]-a[1]).map(([m,v])=>`
+    <div class="card" style="padding:14px"><div class="txt-sec" style="font-size:12px;text-transform:uppercase;letter-spacing:.5px">${esc(m)}</div><div style="font-size:21px;font-weight:700;margin-top:4px">${fmt$(v)}</div></div>`).join('')||'<div class="txt-sec">No meals tagged this month</div>';
+
+  const items=[...new Set(STATE.expenses.map(e=>e.item))].sort();
+  const trendOpts=items.map(i=>`<option>${esc(i)}</option>`).join('');
+
+  document.getElementById('analytics-content').innerHTML = `
+    <div class="card mb12"><div class="section-ttl"><i class="ti ti-chart-bar"></i> Month over month</div>
+      <div class="momchart">${budLine}${momBars}</div>
+      ${budForMk!=null?`<div class="legend"><span><span style="display:inline-block;width:18px;border-top:2px dashed var(--amber)"></span> Budget for ${monthLabel(mk)} (${fmt$(budForMk)})</span></div>`:''}
+    </div>
+    <div class="grid grid-2 mb12">
+      <div class="card"><div class="section-ttl"><i class="ti ti-heart-handshake"></i> Store loyalty · ${monthLabel(mk)}</div>
+        <table><thead><tr><th>Store</th><th>Trips</th><th>Spend</th></tr></thead><tbody>${loyaltyRows}</tbody></table></div>
+      <div class="card"><div class="section-ttl"><i class="ti ti-chart-donut"></i> Category breakdown</div>${catBars}</div>
+    </div>
+    <div class="card mb12"><div class="section-ttl"><i class="ti ti-tools-kitchen-2"></i> Meal costs · ${monthLabel(mk)}</div><div class="grid grid-4">${mealCards}</div></div>
+    <div class="card"><div class="section-ttl"><i class="ti ti-chart-line"></i> Item price trend</div>
+      <select class="select" id="trend-item" style="width:auto;margin-bottom:14px">${trendOpts}</select>
+      <div id="trend-svg-wrap"></div>
+    </div>`;
+  document.getElementById('trend-item').addEventListener('change',renderTrendSvg);
+  renderTrendSvg();
+}
+function renderTrendSvg(){
+  const item=document.getElementById('trend-item').value;
+  const recs = STATE.expenses.filter(e=>e.item===item).sort((a,b)=>a.date.localeCompare(b.date));
+  const wrap=document.getElementById('trend-svg-wrap');
+  if(!recs.length){ wrap.innerHTML='<div class="txt-sec">No data</div>'; return; }
+  const W=600,H=140,padL=44,padR=14,padT=14,padB=26;
+  const dates=[...new Set(recs.map(r=>r.date))].sort();
+  const prices=recs.map(r=>r.price);
+  const minP=Math.min(...prices), maxP=Math.max(...prices);
+  const pr = (maxP-minP)||1;
+  const minD=new Date(dates[0]).getTime(), maxD=new Date(dates[dates.length-1]).getTime();
+  const dr = (maxD-minD)||1;
+  const X = d=> padL + ((new Date(d).getTime()-minD)/dr)*(W-padL-padR);
+  const Y = p=> padT + (1-(p-minP)/pr)*(H-padT-padB);
+  const byStore={};
+  recs.forEach(r=>{ (byStore[r.store]=byStore[r.store]||[]).push(r); });
+  let svg=`<svg width="100%" height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="overflow:visible">`;
+  [minP,(minP+maxP)/2,maxP].forEach(p=>{ const y=Y(p); svg+=`<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="#eef4f0"/><text x="${padL-6}" y="${y+3}" font-size="9" fill="#8BAF93" text-anchor="end">${fmt$(p)}</text>`; });
+  Object.entries(byStore).forEach(([st,arr])=>{
+    const c=storeColor(st);
+    const pts=arr.map(r=>`${X(r.date)},${Y(r.price)}`).join(' ');
+    if(arr.length>1) svg+=`<polyline points="${pts}" fill="none" stroke="${c}" stroke-width="2"/>`;
+    arr.forEach(r=>{ svg+=`<circle cx="${X(r.date)}" cy="${Y(r.price)}" r="4" fill="${c}"><title>${esc(r.date)} · ${esc(st)} · ${fmt$(r.price)}</title></circle>`; });
+  });
+  [dates[0],dates[Math.floor((dates.length-1)/2)],dates[dates.length-1]].forEach((d,i)=>{
+    const anchor=i===0?'start':i===2?'end':'middle';
+    svg+=`<text x="${X(d)}" y="${H-8}" font-size="9" fill="#8BAF93" text-anchor="${anchor}">${d.slice(5)}</text>`;
+  });
+  svg+='</svg>';
+  const legend=`<div class="legend">${Object.keys(byStore).map(s=>`<span><span class="dot" style="background:${storeColor(s)}"></span>${esc(s)}</span>`).join('')}</div>`;
+  wrap.innerHTML=svg+legend;
+}
+
+/* ===================== RECOMMENDATIONS ===================== */
+function renderRecommendations(){
+  const map = buildRecMap();
+  const items = Object.keys(map).sort();
+  const savings = potentialSavings(curMonth());
+  const cards = items.map(item=>{
+    const stores = itemStores(item, map);
+    const best = map[item].__best;
+    const sorted = stores.slice().sort((a,b)=>map[item][a].avgPrice-map[item][b].avgPrice);
+    const totalPurchases = stores.reduce((s,st)=>s+map[item][st].count,0);
+    const rows = sorted.map(st=>{
+      const s=map[item][st]; const isBest=st===best;
+      let arrow='';
+      if(s.trend>0.05) arrow='<i class="ti ti-arrow-up-right" style="color:var(--red)" title="trending up"></i>';
+      else if(s.trend<-0.05) arrow='<i class="ti ti-arrow-down-right" style="color:var(--green-mid)" title="trending down"></i>';
+      return `<div class="rec-store-row" style="${isBest?'background:#f0f7f3;border:1px solid #c3dece':'opacity:.7'}">
+        <span style="width:16px">${isBest?'<i class="ti ti-star-filled" style="color:var(--amber)"></i>':''}</span>
+        <span class="nm">${esc(st)}</span>
+        <span class="txt-sec">${s.count} visit${s.count!==1?'s':''}</span>
+        <span style="width:16px">${arrow}</span>
+        <span style="font-weight:700;min-width:54px;text-align:right">${fmt$(s.avgPrice)}</span>
+      </div>`;
+    }).join('');
+    const prices=sorted.map(st=>map[item][st].avgPrice);
+    const footer = sorted.length>=2 ? `<div class="txt-sec mt12" style="font-size:12px"><i class="ti ti-pig-money" style="color:var(--green-mid)"></i> Save <b>${fmt$(Math.max(...prices)-Math.min(...prices))}</b>/unit vs most expensive</div>`:'';
+    return `<div class="rec-item-card">
+      <div style="display:flex;justify-content:space-between;align-items:start;gap:10px">
+        <div><div style="font-weight:700;font-size:16px">${esc(item)}</div>
+        <div class="txt-sec" style="font-size:12px">${totalPurchases} purchase${totalPurchases!==1?'s':''} across ${stores.length} store${stores.length!==1?'s':''}</div></div>
+        <button class="btn btn-sm" data-action="addRecToList" data-item="${esc(item)}"><i class="ti ti-plus"></i> List</button>
+      </div>
+      <div class="mt12">${rows}</div>${footer}
+    </div>`;
+  }).join('');
+  document.getElementById('page-recommendations').innerHTML = `
+    <div class="page-head"><div><h1>Best Prices</h1><div class="sub">Where to buy each item for less</div></div></div>
+    <div class="card mb12" style="background:#eef7f1;border-color:#c3dece;display:flex;align-items:center;gap:12px">
+      <i class="ti ti-pig-money" style="font-size:30px;color:var(--green-mid)"></i>
+      <div><div style="font-weight:700;font-size:18px">You could save ${fmt$(savings)} this month</div>
+      <div class="txt-sec">by buying each item at its cheapest store based on your history</div></div>
+    </div>
+    <div class="grid grid-2">${cards||'<div class="empty-state"><i class="ti ti-bulb-off"></i>No purchase history yet</div>'}</div>`;
+}
+
+/* ===================== FUN ===================== */
+let funSubPage='overview';
+let funHistMonth=today().slice(0,7);
+let funRating=5;
+function renderFun(){
+  const mk=curMonth();
+  const total=funMonthTotal(mk), budget=STATE.funBudgets[mk]||0;
+  document.getElementById('page-fun').innerHTML = `
+    <div class="page-head">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <h1 style="color:var(--purple)">🎉 Fun Spending</h1>
+        <span class="badge" style="background:var(--purple-light);color:var(--purple);border:1px solid var(--purple-border);font-size:13px">${fmt$(total)} / ${fmt$(budget)} budget</span>
+      </div>
+      <button class="btn btn-purple" data-action="toggleFunBudgetEditor"><i class="ti ti-target"></i> Set/Edit budget</button>
+    </div>
+    <div id="fun-budget-editor"></div>
+    <div class="fun-tabs">
+      <button class="fun-tab ${funSubPage==='overview'?'active':''}" data-action="funTab" data-tab="overview">Overview</button>
+      <button class="fun-tab ${funSubPage==='log'?'active':''}" data-action="funTab" data-tab="log">Log it</button>
+      <button class="fun-tab ${funSubPage==='history'?'active':''}" data-action="funTab" data-tab="history">History</button>
+      <button class="fun-tab ${funSubPage==='wishlist'?'active':''}" data-action="funTab" data-tab="wishlist">Wishlist</button>
+    </div>
+    <div id="fun-content"></div>`;
+  renderFunContent();
+}
+function renderFunContent(){
+  const el=document.getElementById('fun-content');
+  if(funSubPage==='overview') el.innerHTML=funOverviewHtml();
+  else if(funSubPage==='log') el.innerHTML=funLogHtml();
+  else if(funSubPage==='history') el.innerHTML=funHistoryHtml();
+  else if(funSubPage==='wishlist') el.innerHTML=funWishlistHtml();
+}
+function funOverviewHtml(){
+  const mk=curMonth();
+  const exps=funMonthExpenses(mk);
+  const total=funMonthTotal(mk), budget=STATE.funBudgets[mk]||0;
+  const dim=daysInMonthOf(mk), day=new Date(today()).getDate();
+  const forecast = day>0? total/day*dim:0;
+  const avg = exps.length? total/exps.length:0;
+  const kpis=`<div class="grid grid-4 mb12">
+    <div class="kpi purple"><div class="k-label"><i class="ti ti-confetti"></i> This month</div><div class="k-val" style="color:var(--purple)">${fmt$(total)}</div><div class="k-sub">${exps.length} outings</div></div>
+    <div class="kpi purple"><div class="k-label"><i class="ti ti-trending-up"></i> Forecast</div><div class="k-val" style="color:var(--purple)">${fmt$(forecast)}</div><div class="k-sub">projected</div></div>
+    <div class="kpi purple"><div class="k-label"><i class="ti ti-receipt"></i> Avg / outing</div><div class="k-val" style="color:var(--purple)">${fmt$(avg)}</div><div class="k-sub">per experience</div></div>
+    <div class="kpi purple"><div class="k-label"><i class="ti ti-wallet"></i> Budget left</div><div class="k-val" style="color:${budget&&total>budget?'var(--red)':'var(--purple)'}">${fmt$(Math.max(0,budget-total))}</div><div class="k-sub">of ${fmt$(budget)}</div></div>
+  </div>`;
+  let budgetHtml='';
+  if(budget){
+    const pct=Math.min(100,total/budget*100), mark=Math.min(100,day/dim*100);
+    budgetHtml=`<div class="card mb12"><div class="section-ttl" style="color:var(--purple)"><i class="ti ti-target"></i> Fun budget</div>
+      <div class="budget-bar purple"><div class="fill" style="width:${pct}%"></div><div class="marker" style="left:${mark}%"></div></div>
+      <div class="budget-labels"><span>Spent ${fmt$(total)}</span><span>${fmt$(budget)} budget</span></div></div>`;
+  }
+  const catTot={}; exps.forEach(e=>catTot[e.category]=(catTot[e.category]||0)+e.amount);
+  const ctotal=Object.values(catTot).reduce((a,b)=>a+b,0)||1;
+  const catBars=Object.entries(catTot).sort((a,b)=>b[1]-a[1]).map(([c,v])=>`
+    <div class="bar-row"><div class="bar-top"><span><i class="ti ${FUN_CAT_ICONS[c]}"></i> ${c}</span><span class="amt">${fmt$(v)}</span></div>
+    <div class="bar-track"><div style="width:${v/ctotal*100}%;background:${FUN_CAT_COLORS[c]}"></div></div></div>`).join('')||'<div class="txt-sec">No data this month</div>';
+  const spotTot={}; exps.forEach(e=>spotTot[e.place]=(spotTot[e.place]||0)+e.amount);
+  const topSpots=Object.entries(spotTot).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([p,v],i)=>`
+    <div class="list-row"><span style="font-weight:700;color:var(--purple);width:20px">${i+1}</span><div class="grow"><b>${esc(p)}</b></div><b>${fmt$(v)}</b></div>`).join('')||'<div class="txt-sec">No data this month</div>';
+  const months=[...new Set([...STATE.expenses.map(e=>monthKey(e.date)),...STATE.funExpenses.map(e=>monthKey(e.date))])].sort();
+  const maxStack=Math.max(...months.map(k=>monthTotal(k)+funMonthTotal(k)),1);
+  const stackBars=months.map(k=>{
+    const g=monthTotal(k), f=funMonthTotal(k); const tot=g+f;
+    const gh=(g/maxStack)*130, fh=(f/maxStack)*130;
+    return `<div class="sbar"><div style="font-size:10px;font-weight:700;margin-bottom:3px">${fmt$(tot)}</div>
+      <div class="seg f" style="height:${Math.max(0,fh)}px" title="Fun ${fmt$(f)}"></div>
+      <div class="seg g" style="height:${Math.max(0,gh)}px" title="Groceries ${fmt$(g)}"></div>
+      <div class="lbl">${monthLabel(k).split(' ')[0].slice(0,3)}</div></div>`;
+  }).join('');
+  const topRated=[...exps].sort((a,b)=>b.rating-a.rating||b.amount-a.amount).slice(0,5).map(e=>`
+    <div class="list-row"><i class="ti ${FUN_CAT_ICONS[e.category]}" style="font-size:20px;color:${FUN_CAT_COLORS[e.category]}"></i>
+      <div class="grow"><b>${esc(e.what)}</b> <span class="txt-sec">· ${esc(e.place)}</span><div class="sub">${e.date.slice(5)}</div></div>
+      <div style="text-align:right">${stars(e.rating)}<div style="color:var(--purple);font-weight:700">${fmt$(e.amount)}</div></div></div>`).join('')||'<div class="txt-sec">No outings yet this month</div>';
+
+  return `${kpis}${budgetHtml}
+    <div class="grid grid-2 mb12">
+      <div class="card"><div class="section-ttl" style="color:var(--purple)"><i class="ti ti-chart-pie"></i> By category</div>${catBars}</div>
+      <div class="card"><div class="section-ttl" style="color:var(--purple)"><i class="ti ti-map-pin"></i> Top spots</div>${topSpots}</div>
+    </div>
+    <div class="card mb12"><div class="section-ttl"><i class="ti ti-stack-2"></i> Groceries vs Fun</div>
+      <div class="stackchart">${stackBars}</div>
+      <div class="legend"><span><span class="dot" style="background:var(--green-mid)"></span>Groceries</span><span><span class="dot" style="background:#c77dff"></span>Fun</span></div></div>
+    <div class="card"><div class="section-ttl" style="color:var(--purple)"><i class="ti ti-star"></i> Top rated experiences</div>${topRated}</div>`;
+}
+function funLogHtml(){
+  const catOpts=FUN_CATS.map(c=>`<option>${c}</option>`).join('');
+  const starsRow=[1,2,3,4,5].map(n=>`<button class="star-btn ${n<=funRating?'on':''}" data-action="setRating" data-rating="${n}">★</button>`).join('');
+  return `<div class="card">
+    <div class="section-ttl" style="color:var(--purple)"><i class="ti ti-circle-plus"></i> Log a fun expense</div>
+    <div class="grid grid-2">
+      <div class="field"><label class="label">Date</label><input class="input" type="date" id="fun-date" value="${today()}" max="${today()}"></div>
+      <div class="field"><label class="label">Category</label><select class="select" id="fun-category">${catOpts}</select></div>
+      <div class="field" style="grid-column:1/-1"><label class="label">What</label><input class="input" id="fun-what" placeholder="e.g. Omakase dinner" autocomplete="off"></div>
+      <div class="field" style="grid-column:1/-1"><label class="label">Place</label><input class="input" id="fun-place" placeholder="e.g. Nobu" autocomplete="off"></div>
+      <div class="field"><label class="label">Amount</label><input class="input" type="number" id="fun-amount" placeholder="0.00" min="0" step="0.01"></div>
+      <div class="field"><label class="label">Vibe rating</label><div id="fun-stars">${starsRow}</div></div>
+      <div class="field" style="grid-column:1/-1"><label class="label">Note (optional)</label><input class="input" id="fun-note" placeholder="optional" autocomplete="off"></div>
+    </div>
+    <div class="mt16"><button class="btn btn-purple" data-action="submitFunForm"><i class="ti ti-device-floppy"></i> Save</button></div>
+  </div>`;
+}
+function funHistoryHtml(){
+  const months=[...new Set(STATE.funExpenses.map(e=>monthKey(e.date)))].sort().reverse();
+  if(!months.includes(funHistMonth)) funHistMonth=months[0]||today().slice(0,7);
+  const tabs=months.map(k=>`<button class="fun-pill ${k===funHistMonth?'active':''}" data-action="funHistTab" data-month="${k}">${monthLabel(k)}</button>`).join('');
+  let rows=STATE.funExpenses.filter(e=>monthKey(e.date)===funHistMonth).sort((a,b)=>b.date.localeCompare(a.date));
+  const total=rows.reduce((s,e)=>s+e.amount,0);
+  const body = rows.length? rows.map(e=>`<tr>
+    <td>${e.date.slice(5)}</td><td><b>${esc(e.what)}</b></td><td>${esc(e.place)}</td>
+    <td><span class="badge" style="background:${FUN_CAT_COLORS[e.category]}22;color:${FUN_CAT_COLORS[e.category]}">${esc(e.category)}</span></td>
+    <td style="color:var(--purple);font-weight:700">${fmt$(e.amount)}</td><td>${stars(e.rating)}</td>
+    <td class="txt-sec">${esc(e.note||'')}</td>
+    <td><button class="btn btn-ghost btn-sm" data-action="deleteFun" data-id="${e.id}"><i class="ti ti-trash"></i></button></td></tr>`).join('')
+    : '<tr><td colspan="8"><div class="empty-state"><i class="ti ti-confetti-off"></i>No fun logged this month</div></td></tr>';
+  return `<div class="tabs">${tabs}</div>
+    <div class="card"><div class="tbl-wrap"><table>
+      <thead><tr><th>Date</th><th>What</th><th>Place</th><th>Category</th><th>Amount</th><th>Vibe</th><th>Note</th><th></th></tr></thead>
+      <tbody>${body}</tbody>
+      <tfoot><tr><td colspan="4" style="text-align:right;font-weight:700">Month total</td><td colspan="4" style="color:var(--purple);font-weight:700">${fmt$(total)}</td></tr></tfoot>
+    </table></div></div>`;
+}
+function funWishlistHtml(){
+  const catOpts=FUN_CATS.map(c=>`<option>${c}</option>`).join('');
+  const pending=STATE.wishlist.filter(w=>!w.done), done=STATE.wishlist.filter(w=>w.done);
+  const rowHtml=w=>`<div class="list-row ${w.done?'done':''}">
+    <span class="chk ${w.done?'on':''}" data-action="toggleWish" data-id="${w.id}">${w.done?'<i class="ti ti-check" style="font-size:13px"></i>':''}</span>
+    <i class="ti ${FUN_CAT_ICONS[w.category]||'ti-sparkles'}" style="font-size:20px;color:${FUN_CAT_COLORS[w.category]||'#888'}"></i>
+    <div class="grow"><div class="name-txt"><b>${esc(w.what)}</b> ${w.place?`<span class="txt-sec">@ ${esc(w.place)}</span>`:''} ${w.note?`<span class="txt-sec">· ${esc(w.note)}</span>`:''}</div></div>
+    <span class="badge" style="background:${(FUN_CAT_COLORS[w.category]||'#888')}22;color:${FUN_CAT_COLORS[w.category]||'#888'}">${esc(w.category)}</span>
+    <button class="btn btn-ghost btn-sm" data-action="deleteWish" data-id="${w.id}"><i class="ti ti-x"></i></button></div>`;
+  return `<div class="card mb12">
+    <div class="grid" style="grid-template-columns:2fr 1.5fr 1.3fr 1.5fr auto;gap:10px;align-items:end">
+      <div class="field"><label class="label">What</label><input class="input" id="wish-what" placeholder="Dream experience" autocomplete="off"></div>
+      <div class="field"><label class="label">Place</label><input class="input" id="wish-place" placeholder="optional" autocomplete="off"></div>
+      <div class="field"><label class="label">Category</label><select class="select" id="wish-category">${catOpts}</select></div>
+      <div class="field"><label class="label">Note</label><input class="input" id="wish-note" placeholder="optional" autocomplete="off"></div>
+      <button class="btn btn-purple" data-action="addWishItem"><i class="ti ti-plus"></i> Add</button>
+    </div></div>
+    <div class="card">${pending.map(rowHtml).join('')||'<div class="empty-state"><i class="ti ti-star-off"></i>Your wishlist is empty</div>'}
+    ${done.length?`<div class="label mt16">Done ✓</div>`+done.map(rowHtml).join(''):''}</div>`;
+}
+
+/* ===================== SETTINGS ===================== */
+function renderSettings(){
+  const storePills=STATE.stores.length ? STATE.stores.map(s=>{
+    const c=storeColor(s);
+    return `<span class="store-pill" style="background:${c}22;color:${c}"><span class="dot" style="background:${c}"></span>${esc(s)}<button data-action="removeStore" data-store="${esc(s)}"><i class="ti ti-x"></i></button></span>`;
+  }).join('') : '<div class="txt-sec" style="font-size:13px">No stores yet — add your own below. They\'ll be saved and available to pick when adding purchases.</div>';
+
+  const recCards=STATE.recurring.map(r=>{
+    const due=recurringDueDate(r);
+    const overdue=recurringOverdue(r);
+    const elapsed=dateDiffDays(r.lastBought,today());
+    const pct=Math.min(100, Math.max(0,elapsed/r.interval*100));
+    const dueIn=dateDiffDays(today(),due);
+    return `<div class="rec-card">
+      <button class="btn btn-ghost btn-sm" style="position:absolute;top:8px;right:8px" data-action="deleteRecurring" data-id="${r.id}"><i class="ti ti-trash"></i></button>
+      <div style="font-weight:700"><i class="ti ${CAT_ICONS[r.category]||'ti-box'}"></i> ${esc(r.item)}</div>
+      <div class="txt-sec" style="font-size:12px;margin-top:4px">${storeTag(r.store)}</div>
+      <div class="rec-prog"><div class="${overdue?'over':''}" style="width:${pct}%"></div></div>
+      <span class="badge" style="background:${overdue?'#fdf0e6':'#eaf5ee'};color:${overdue?'var(--amber)':'var(--green-mid)'}">${overdue?`Due ${Math.abs(dueIn)}d ago`:`Due in ${dueIn}d`}</span>
+      <div class="rec-labels mt12"><span>Bought ${r.lastBought.slice(5)}</span><span>Every ${r.interval}d</span><span>Due ${due.slice(5)}</span></div>
+    </div>`;
+  }).join('')||'<div class="txt-sec">No recurring items yet</div>';
+
+  const budgetRows=Object.keys(STATE.budgets).sort().reverse().map(mk=>{
+    const spent=monthTotal(mk), b=STATE.budgets[mk];
+    const pct=b?Math.round(spent/b*100):0;
+    return `<div class="list-row"><div class="grow"><b>${monthLabel(mk)}</b><div class="sub">Spent ${fmt$(spent)} · ${pct}% of budget</div></div>
+      <input class="input" type="number" style="width:120px" value="${b}" data-budget-month="${mk}"></div>`;
+  }).join('')||'<div class="txt-sec">No budgets set</div>';
+
+  document.getElementById('page-settings').innerHTML = `
+    <div class="page-head"><div><h1>Settings</h1><div class="sub">Stores, recurring items, budgets &amp; data</div></div></div>
+    <div class="card mb12"><div class="section-ttl"><i class="ti ti-building-store"></i> My stores</div>
+      <div>${storePills}</div>
+      <div class="row-flex mt12"><input class="input" id="new-store-input" placeholder="Add a store…" style="max-width:280px" autocomplete="off"><button class="btn btn-primary" data-action="addStore"><i class="ti ti-plus"></i> Add store</button></div>
+    </div>
+    <div class="card mb12"><div class="section-ttl"><i class="ti ti-refresh"></i> Recurring items <button class="btn btn-sm" style="margin-left:auto" data-action="openAddRecurringModal"><i class="ti ti-plus"></i> Add item</button></div>
+      <div class="grid grid-3">${recCards}</div>
+    </div>
+    <div class="card mb12"><div class="section-ttl"><i class="ti ti-target"></i> Monthly budgets</div>${budgetRows}</div>
+    <div class="card"><div class="section-ttl"><i class="ti ti-database"></i> Data</div>
+      <div class="row-flex">
+        <button class="btn" data-action="exportCSV"><i class="ti ti-download"></i> Export CSV</button>
+        <button class="btn" data-action="resetData"><i class="ti ti-refresh"></i> Reset to sample data</button>
+        <button class="btn btn-danger" data-action="clearData"><i class="ti ti-trash"></i> Clear all data</button>
+      </div>
+    </div>`;
+  const nsi=document.getElementById('new-store-input');
+  nsi.addEventListener('keydown',e=>{ if(e.key==='Enter') addStore(); });
+  document.querySelectorAll('[data-budget-month]').forEach(inp=>{
+    inp.addEventListener('blur',()=>{ const mk=inp.dataset.budgetMonth; const v=parseFloat(inp.value); if(!isNaN(v)){ STATE.budgets[mk]=v; save(); renderSidebarBottom(); showToast('Budget updated'); renderSettings(); } });
+  });
+}
+
+/* ===================== TOAST / MODAL ===================== */
+function showToast(msg){ const t=document.getElementById('toast'); t.innerHTML=`<i class="ti ti-circle-check"></i> ${esc(msg)}`; t.classList.add('visible'); clearTimeout(t._tm); t._tm=setTimeout(()=>t.classList.remove('visible'),2400); }
+function openModal(html){ document.getElementById('modal-body').innerHTML=html; document.getElementById('modal-overlay').classList.add('visible'); }
+function closeModal(){ document.getElementById('modal-overlay').classList.remove('visible'); }
+document.getElementById('modal-overlay').addEventListener('click',e=>{ if(e.target.id==='modal-overlay') closeModal(); });
+
+function addStore(){
+  const inp=document.getElementById('new-store-input'); const v=inp.value.trim();
+  if(!v) return;
+  if(!STATE.stores.some(s=>s.toLowerCase()===v.toLowerCase())){ STATE.stores.push(v); save(); showToast('Store added'); renderSettings(); renderSidebarBottom(); }
+  else { inp.value=''; }
+}
+
+let newRecInterval=14, newRecCustom=false;
+function openAddRecurringModal(){
+  newRecInterval=14; newRecCustom=false;
+  const catOpts=CATEGORIES.map(c=>`<option>${c}</option>`).join('');
+  openModal(`<span class="modal-x" data-action="closeModal">×</span><h2>Add recurring item</h2>
+    <div class="spacer"></div>
+    <div class="field mb12"><label class="label">Item</label><input class="input" id="rec-item" placeholder="e.g. Milk" autocomplete="off"></div>
+    <label class="label">Interval</label>
+    <div class="row-flex mb12" id="rec-presets">
+      ${[7,10,14,21,30].map(d=>`<button class="preset-pill ${d===14?'active':''}" data-action="setIntervalPreset" data-days="${d}">${d}d</button>`).join('')}
+      <button class="preset-pill" data-action="toggleRecCustom" id="rec-custom-btn">Custom…</button>
+    </div>
+    <div id="rec-custom-wrap" style="display:none" class="mb12"><input class="input" type="number" id="rec-custom" placeholder="days" min="1" style="max-width:140px"></div>
+    <div class="grid grid-2 mb12">
+      <div class="field"><label class="label">Store</label><input class="input" id="rec-store" list="store-dl-rec" placeholder="Type a store name" autocomplete="off">${storeDatalist('store-dl-rec')}</div>
+      <div class="field"><label class="label">Category</label><select class="select" id="rec-category">${catOpts}</select></div>
+    </div>
+    <div class="field mb12"><label class="label">Last bought</label><input class="input" type="date" id="rec-last" value="${today()}" max="${today()}"></div>
+    <div class="card" style="background:#f8faf8;padding:12px" id="rec-preview"></div>
+    <div class="mt16 row-flex"><button class="btn btn-primary" data-action="saveNewRecurring"><i class="ti ti-device-floppy"></i> Save</button><button class="btn btn-ghost" data-action="closeModal">Cancel</button></div>`);
+  document.getElementById('rec-item').addEventListener('input',updateRecPreview);
+  document.getElementById('rec-last').addEventListener('input',updateRecPreview);
+  document.getElementById('rec-store').addEventListener('change',updateRecPreview);
+  updateRecPreview();
+}
+function curRecInterval(){ return newRecCustom ? (parseInt(document.getElementById('rec-custom')?.value)||0) : newRecInterval; }
+function updateRecPreview(){
+  const item=document.getElementById('rec-item')?.value.trim()||'Item';
+  const last=document.getElementById('rec-last')?.value||today();
+  const iv=curRecInterval();
+  const due=iv?addDays(last,iv):null;
+  const dueTxt = due? new Date(due+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
+  document.getElementById('rec-preview').innerHTML=`<i class="ti ti-bulb" style="color:var(--amber)"></i> <b>${esc(item)}</b> will next be due on <b>${dueTxt}</b> (every ${iv||'?'} days)`;
+}
+
+/* ===================== ACTIONS ===================== */
+const ACTIONS = {
+  navigate(el){ goTo(el.dataset.page); },
+  closeModal(){ closeModal(); },
+  openBudgetModal(){
+    const mk=curMonth();
+    openModal(`<span class="modal-x" data-action="closeModal">×</span><h2>Set budget</h2>
+      <div class="txt-sec mb12">Grocery budget for ${monthLabel(mk)}</div>
+      <input class="input" type="number" id="budget-input" value="${STATE.budgets[mk]||''}" placeholder="e.g. 250" min="0">
+      <div class="mt16 row-flex"><button class="btn btn-primary" data-action="saveBudget"><i class="ti ti-check"></i> Save</button><button class="btn btn-ghost" data-action="closeModal">Cancel</button></div>`);
+  },
+  saveBudget(){
+    const v=parseFloat(document.getElementById('budget-input').value);
+    if(!isNaN(v)){ STATE.budgets[curMonth()]=v; save(); closeModal(); showToast('Budget saved'); renderDashboard(); renderSidebarBottom(); }
+  },
+  addRecurringToList(el){
+    const r=STATE.recurring.find(x=>x.id===el.dataset.id); if(!r) return;
+    if(!STATE.groceryList.some(i=>!i.done && i.item.toLowerCase()===r.item.toLowerCase()))
+      STATE.groceryList.push({ id:genId(), item:r.item, qty:1, store:r.store, note:'', done:false });
+    save(); showToast(`${r.item} added to list`);
+    const active=document.querySelector('.page.active').id.replace('page-','');
+    render(active); renderSidebarBottom();
+  },
+  goToHistoryMonth(el){ historyMonth=el.dataset.month; goTo('history'); },
+  submitQuick(){
+    const inp=document.getElementById('quick-input'); const raw=inp.value.trim(); if(!raw) return;
+    const tokens=raw.split(/\s+/);
+    let price=null, store=null, qty=null, item=null;
+    const pm=raw.match(/(\d+\.\d{1,2})\s*$/); if(pm) price=parseFloat(pm[1]);
+    for(const s of STATE.stores){ if(raw.toLowerCase().includes(s.toLowerCase())){ store=s; break; } }
+    const priceStr = pm?pm[1]:null;
+    for(const t of tokens){ if(/^\d+$/.test(t) && t!==priceStr){ qty=parseInt(t); break; } }
+    item=tokens[0];
+    if(price==null){ showToast('Could not read a price'); return; }
+    const map=buildRecMap();
+    const match=Object.keys(map).find(k=>k.toLowerCase()===item.toLowerCase());
+    const ref = match? STATE.expenses.find(e=>e.item.toLowerCase()===item.toLowerCase()) : null;
+    const exp={ id:genId(), date:today(), item, qty:qty||1, price, store:store||STATE.stores[0]||'', category:ref?ref.category:'Other', unit:ref?ref.unit:'each', note:'', meal:'' };
+    STATE.expenses.push(exp);
+    STATE.recurring.forEach(r=>{ if(r.item.toLowerCase()===item.toLowerCase()) r.lastBought=today(); });
+    save(); inp.value=''; showToast('Purchase saved!'); renderSidebarBottom();
+  },
+  submitAddForm(){
+    const item=document.getElementById('f-item').value.trim();
+    const price=parseFloat(document.getElementById('f-price').value);
+    if(!item){ showToast('Enter an item'); return; }
+    if(isNaN(price)){ showToast('Enter a price'); return; }
+    const store=document.getElementById('f-store').value.trim();
+    rememberStore(store);
+    const exp={
+      id:genId(), date:document.getElementById('f-date').value||today(), item,
+      qty:parseFloat(document.getElementById('f-qty').value)||1, price,
+      store,
+      category:document.getElementById('f-category').value,
+      unit:document.getElementById('f-unit').value,
+      meal:document.getElementById('f-meal').value.trim(),
+      note:document.getElementById('f-note').value.trim()
+    };
+    STATE.expenses.push(exp);
+    STATE.recurring.forEach(r=>{ if(r.item.toLowerCase()===item.toLowerCase()) r.lastBought=exp.date; });
+    save(); showToast('Purchase saved!'); renderAdd(); renderSidebarBottom();
+  },
+  addListItem(){
+    const item=document.getElementById('li-item').value.trim(); if(!item){ showToast('Enter an item'); return; }
+    let store=document.getElementById('li-store').value.trim();
+    const qty=parseInt(document.getElementById('li-qty').value)||1;
+    const note=document.getElementById('li-note').value.trim();
+    if(!store){ const map=buildRecMap(); const m=Object.keys(map).find(k=>k.toLowerCase()===item.toLowerCase()); store=m?map[m].__best:''; }
+    rememberStore(store);
+    STATE.groceryList.push({ id:genId(), item, qty, store, note, done:false });
+    save(); showToast('Added to list'); renderList();
+  },
+  toggleListItem(el){ const i=STATE.groceryList.find(x=>x.id===el.dataset.id); if(i){ i.done=!i.done; save(); renderList(); } },
+  removeListItem(el){ STATE.groceryList=STATE.groceryList.filter(x=>x.id!==el.dataset.id); save(); renderList(); },
+  clearDone(){ STATE.groceryList=STATE.groceryList.filter(i=>!i.done); save(); showToast('Cleared done items'); renderList(); },
+  openTripMode(){
+    const pending=STATE.groceryList.filter(i=>!i.done);
+    const groups={};
+    pending.forEach(i=>{ const s=i.store||'Unassigned'; (groups[s]=groups[s]||[]).push(i); });
+    const html=Object.keys(groups).length? Object.entries(groups).map(([s,items])=>`
+      <div class="card mb12" style="padding:14px">
+        <div style="display:flex;align-items:center;gap:8px;font-weight:700"><span class="dot" style="background:${storeColor(s)}"></span>${esc(s)} <span class="badge" style="margin-left:auto">${items.length}</span></div>
+        <div class="mt12">${items.map(i=>`<div class="list-row" style="padding:6px 0;border:none"><i class="ti ti-point" style="color:var(--muted)"></i><div class="grow">${esc(i.item)} ${i.qty>1?`×${i.qty}`:''} ${i.note?`<span class="txt-sec">· ${esc(i.note)}</span>`:''}</div></div>`).join('')}</div>
+      </div>`).join('') : '<div class="empty-state"><i class="ti ti-map-off"></i>Nothing to shop for</div>';
+    openModal(`<span class="modal-x" data-action="closeModal">×</span><h2>🗺️ Trip mode</h2><div class="txt-sec mb12">Items grouped by store</div>${html}
+      <button class="btn btn-ghost" data-action="closeModal">Close</button>`);
+  },
+  setHistoryMonth(el){ historyMonth=el.dataset.month; renderHistory(); },
+  exportCSV(){ exportCSV(); },
+  deleteExpense(el){ STATE.expenses=STATE.expenses.filter(x=>x.id!==el.dataset.id); save(); showToast('Deleted'); renderHistory(); renderSidebarBottom(); },
+  addRecToList(el){
+    const item=el.dataset.item; const map=buildRecMap();
+    const store=map[item]?map[item].__best:'';
+    if(!STATE.groceryList.some(i=>!i.done && i.item.toLowerCase()===item.toLowerCase()))
+      STATE.groceryList.push({ id:genId(), item, qty:1, store, note:'', done:false });
+    save(); showToast(`${item} added to list`); renderSidebarBottom();
+  },
+  funTab(el){ funSubPage=el.dataset.tab; document.querySelectorAll('.fun-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===funSubPage)); renderFunContent(); },
+  toggleFunBudgetEditor(){
+    const wrap=document.getElementById('fun-budget-editor');
+    if(wrap.innerHTML){ wrap.innerHTML=''; return; }
+    const mk=curMonth();
+    wrap.innerHTML=`<div class="card mb12" style="border-color:var(--purple-border)">
+      <div class="row-flex"><label class="label" style="margin:0">Fun budget for ${monthLabel(mk)}:</label>
+      <input class="input" type="number" id="fun-budget-input" value="${STATE.funBudgets[mk]||''}" placeholder="e.g. 200" style="max-width:160px">
+      <button class="btn btn-purple" data-action="saveFunBudget"><i class="ti ti-check"></i> Save</button></div></div>`;
+  },
+  saveFunBudget(){
+    const v=parseFloat(document.getElementById('fun-budget-input').value);
+    if(!isNaN(v)){ STATE.funBudgets[curMonth()]=v; save(); showToast('Fun budget saved'); renderFun(); renderSidebarBottom(); }
+  },
+  setRating(el){ funRating=parseInt(el.dataset.rating); document.querySelectorAll('#fun-stars .star-btn').forEach((b,i)=>b.classList.toggle('on',i<funRating)); },
+  submitFunForm(){
+    const what=document.getElementById('fun-what').value.trim();
+    const amount=parseFloat(document.getElementById('fun-amount').value);
+    if(!what){ showToast('Enter what you did'); return; }
+    if(isNaN(amount)){ showToast('Enter an amount'); return; }
+    STATE.funExpenses.push({ id:genId(), date:document.getElementById('fun-date').value||today(),
+      what, place:document.getElementById('fun-place').value.trim(),
+      category:document.getElementById('fun-category').value, amount, rating:funRating,
+      note:document.getElementById('fun-note').value.trim() });
+    save(); funRating=5; showToast('Fun saved! 🎉'); renderFun(); renderSidebarBottom();
+  },
+  funHistTab(el){ funHistMonth=el.dataset.month; renderFunContent(); },
+  deleteFun(el){ STATE.funExpenses=STATE.funExpenses.filter(x=>x.id!==el.dataset.id); save(); showToast('Deleted'); renderFunContent(); renderSidebarBottom(); },
+  addWishItem(){
+    const what=document.getElementById('wish-what').value.trim(); if(!what){ showToast('Enter a wish'); return; }
+    STATE.wishlist.push({ id:genId(), what, place:document.getElementById('wish-place').value.trim(),
+      category:document.getElementById('wish-category').value, note:document.getElementById('wish-note').value.trim(), done:false });
+    save(); showToast('Added to wishlist'); renderFunContent();
+  },
+  toggleWish(el){ const w=STATE.wishlist.find(x=>x.id===el.dataset.id); if(w){ w.done=!w.done; save(); renderFunContent(); } },
+  deleteWish(el){ STATE.wishlist=STATE.wishlist.filter(x=>x.id!==el.dataset.id); save(); renderFunContent(); },
+  removeStore(el){ STATE.stores=STATE.stores.filter(s=>s!==el.dataset.store); save(); renderSettings(); renderSidebarBottom(); },
+  addStore(){ addStore(); },
+  openAddRecurringModal(){ openAddRecurringModal(); },
+  setIntervalPreset(el){ newRecInterval=parseInt(el.dataset.days); newRecCustom=false;
+    document.getElementById('rec-custom-wrap').style.display='none';
+    document.querySelectorAll('#rec-presets .preset-pill').forEach(p=>p.classList.remove('active'));
+    el.classList.add('active'); updateRecPreview(); },
+  toggleRecCustom(el){ newRecCustom=true; document.getElementById('rec-custom-wrap').style.display='block';
+    document.querySelectorAll('#rec-presets .preset-pill').forEach(p=>p.classList.remove('active')); el.classList.add('active');
+    const ci=document.getElementById('rec-custom'); ci.focus(); ci.oninput=updateRecPreview; updateRecPreview(); },
+  saveNewRecurring(){
+    const item=document.getElementById('rec-item').value.trim(); if(!item){ showToast('Enter an item'); return; }
+    const iv=curRecInterval(); if(!iv){ showToast('Pick an interval'); return; }
+    const store=document.getElementById('rec-store').value.trim(); rememberStore(store);
+    STATE.recurring.push({ id:genId(), item, store,
+      category:document.getElementById('rec-category').value, interval:iv, lastBought:document.getElementById('rec-last').value||today() });
+    save(); closeModal(); showToast('Recurring item added'); renderSettings(); renderSidebarBottom();
+  },
+  deleteRecurring(el){ STATE.recurring=STATE.recurring.filter(x=>x.id!==el.dataset.id); save(); renderSettings(); renderSidebarBottom(); },
+  resetData(){ if(confirm('Reset everything to sample data? This will overwrite your current data.')){ resetToSampleData(); showToast('Sample data restored'); goTo('dashboard'); } },
+  clearData(){ if(confirm('Clear ALL data? This cannot be undone.')){ Object.assign(STATE,{ expenses:[], groceryList:[], recurring:[], budgets:{}, stores:[], funExpenses:[], wishlist:[], funBudgets:{} }); save(); showToast('All data cleared'); goTo('dashboard'); } }
+};
+
+document.addEventListener('click',e=>{
+  const el=e.target.closest('[data-action]'); if(!el) return;
+  const fn=ACTIONS[el.dataset.action]; if(fn){ e.preventDefault(); fn(el); }
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter' && e.target.id==='quick-input'){ e.preventDefault(); ACTIONS.submitQuick(); }
+});
+
+/* ===================== CSV EXPORT ===================== */
+function exportCSV(){
+  const h=['Date','Item','Qty','Price','Total','Store','Category','Unit','Note','Meal'];
+  const rows=[...STATE.expenses].sort((a,b)=>b.date.localeCompare(a.date))
+    .map(e=>[e.date,e.item,e.qty,e.price,(e.price*e.qty).toFixed(2),e.store,e.category,e.unit||'',e.note||'',e.meal||'']);
+  const csv=[h,...rows].map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download='cartwise_expenses.csv'; a.click();
+  showToast('CSV exported');
+}
+
+/* ===================== INIT ===================== */
+document.addEventListener('DOMContentLoaded',()=>{
+  load();
+  goTo('dashboard');
+});
+</script>
+</body>
+</html>
