@@ -326,7 +326,7 @@ let cloudReady = false;  // true once initial cloud load is done
 let _pushTimer = null;
 
 /* ===================== STATE ===================== */
-const STATE = { expenses:[], groceryList:[], recurring:[], budgets:{}, stores:[], funExpenses:[], wishlist:[], funBudgets:{}, travelExpenses:[], bills:[] };
+const STATE = { expenses:[], groceryList:[], recurring:[], budgets:{}, stores:[], funExpenses:[], wishlist:[], funBudgets:{}, travelExpenses:[], bills:[], currency:'$', currencySuffix:false };
 function save(){ localStorage.setItem('cartwise', JSON.stringify(STATE)); schedulePush(); }
 function load(){ const r = localStorage.getItem('cartwise'); if(r) Object.assign(STATE, JSON.parse(r)); else resetToSampleData(); }
 
@@ -351,7 +351,7 @@ async function pullCloud(){
   if(!SB || !CUR_USER) return false;
   const { data, error } = await SB.from('cartwise_data').select('data').eq('user_id', CUR_USER.id).maybeSingle();
   if(error){ console.error('Cloud load failed:', error.message); return false; }
-  if(data && data.data){ Object.assign(STATE, { expenses:[], groceryList:[], recurring:[], budgets:{}, stores:[], funExpenses:[], wishlist:[], funBudgets:{}, travelExpenses:[], bills:[] }, data.data); localStorage.setItem('cartwise', JSON.stringify(STATE)); return true; }
+  if(data && data.data){ Object.assign(STATE, { expenses:[], groceryList:[], recurring:[], budgets:{}, stores:[], funExpenses:[], wishlist:[], funBudgets:{}, travelExpenses:[], bills:[], currency:'$', currencySuffix:false }, data.data); localStorage.setItem('cartwise', JSON.stringify(STATE)); return true; }
   return false;
 }
 async function initCloud(){
@@ -426,10 +426,30 @@ const BILL_CATS = ["Rent","Wifi","Water","PSEG","Phone","Insurance","Subscriptio
 const BILL_CAT_COLORS = {"Rent":"#bc6c25","Wifi":"#0096c7","Water":"#0077b6","PSEG":"#e9740a","Phone":"#6a4c93","Insurance":"#2a9d8f","Subscription":"#7b2d8b","Other":"#888"};
 const BILL_CAT_ICONS = {"Rent":"ti-home","Wifi":"ti-wifi","Water":"ti-droplet","PSEG":"ti-bolt","Phone":"ti-device-mobile","Insurance":"ti-shield","Subscription":"ti-repeat","Other":"ti-file-dollar"};
 const BILLS_ACCENT = "#bc6c25";
+// Common currency symbols. Users can also type any custom symbol in Settings.
+const CURRENCIES = {
+  "$":  "US Dollar ($)",
+  "₹":  "Indian Rupee (₹)",
+  "Rs.":"Rupee (Rs.)",
+  "€":  "Euro (€)",
+  "£":  "British Pound (£)",
+  "¥":  "Yen / Yuan (¥)",
+  "C$": "Canadian Dollar (C$)",
+  "A$": "Australian Dollar (A$)",
+  "₩":  "Korean Won (₩)",
+  "R$": "Brazilian Real (R$)",
+  "د.إ":"UAE Dirham (د.إ)",
+  "₦":  "Nigerian Naira (₦)"
+};
 
 /* ===================== UTILITIES ===================== */
 const today = () => new Date().toISOString().split('T')[0];
-const fmt$ = n => '$' + Number(n).toFixed(2);
+function fmt$(n){
+  const sym = STATE.currency || '$';
+  const v = Number(n).toFixed(2);
+  if(STATE.currencySuffix) return v + ' ' + sym;          // e.g. "1234.50 kr"
+  return sym.length > 1 ? sym + ' ' + v : sym + v;        // "Rs. 1234.50"  /  "$1234.50"
+}
 const monthKey = d => d.slice(0,7);
 const monthLabel = k => { const [y,m]=k.split('-'); return new Date(+y,+m-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'}); };
 function genId(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
@@ -1461,9 +1481,23 @@ function renderSettings(){
   } else {
     accountCard = `<div class="card mb12" style="background:#fff8f0;border-color:var(--amber)"><div class="section-ttl"><i class="ti ti-cloud-off"></i> Cloud sync not set up</div><div class="txt-sec" style="font-size:13px">This device is storing data locally only, so it won't appear on your other devices. Add your Supabase keys in the code (top of the script) to enable login &amp; cross-device sync.</div></div>`;
   }
+  const isCustomCurrency = !CURRENCIES[STATE.currency];
+  const currOpts = Object.entries(CURRENCIES).map(([sym,label])=>`<option value="${esc(sym)}" ${!isCustomCurrency&&STATE.currency===sym?'selected':''}>${esc(label)}</option>`).join('')
+    + `<option value="__custom" ${isCustomCurrency?'selected':''}>Custom symbol…</option>`;
+  const currencyCard = `<div class="card mb12"><div class="section-ttl"><i class="ti ti-coin"></i> Currency</div>
+    <div class="txt-sec mb12" style="font-size:13px">Pick the currency used everywhere amounts appear. Choose a preset or type your own symbol.</div>
+    <div class="row-flex" style="align-items:end">
+      <div class="field"><label class="label">Currency</label><select class="select" id="currency-select" style="min-width:220px">${currOpts}</select></div>
+      <div class="field" id="currency-custom-wrap" style="display:${isCustomCurrency?'flex':'none'}"><label class="label">Custom symbol</label><input class="input" id="currency-custom" placeholder="e.g. Rs., kr, zł" value="${isCustomCurrency?esc(STATE.currency):''}" style="max-width:150px" autocomplete="off"></div>
+      <label class="row-flex" style="gap:7px;align-items:center;font-size:13px;font-weight:600;color:var(--secondary);margin-bottom:9px"><input type="checkbox" id="currency-suffix" ${STATE.currencySuffix?'checked':''}> Show symbol after amount</label>
+      <button class="btn btn-primary" data-action="saveCurrency" style="margin-bottom:1px"><i class="ti ti-check"></i> Save</button>
+    </div>
+    <div class="mt12 txt-sec" style="font-size:13px">Preview: <b id="currency-preview" style="color:var(--text)">${fmt$(1234.5)}</b></div>
+  </div>`;
   document.getElementById('page-settings').innerHTML = `
-    <div class="page-head"><div><h1>Settings</h1><div class="sub">Account, stores, recurring items, budgets &amp; data</div></div></div>
+    <div class="page-head"><div><h1>Settings</h1><div class="sub">Account, currency, stores, recurring items, budgets &amp; data</div></div></div>
     ${accountCard}
+    ${currencyCard}
     <div class="card mb12"><div class="section-ttl"><i class="ti ti-building-store"></i> My stores</div>
       <div>${storePills}</div>
       <div class="row-flex mt12"><input class="input" id="new-store-input" placeholder="Add a store…" style="max-width:280px" autocomplete="off"><button class="btn btn-primary" data-action="addStore"><i class="ti ti-plus"></i> Add store</button></div>
@@ -1481,6 +1515,17 @@ function renderSettings(){
     </div>`;
   const nsi=document.getElementById('new-store-input');
   nsi.addEventListener('keydown',e=>{ if(e.key==='Enter') addStore(); });
+  const curSel=document.getElementById('currency-select'), curCustom=document.getElementById('currency-custom'), curSuffix=document.getElementById('currency-suffix');
+  const updCurrencyPreview=()=>{
+    const isCustom=curSel.value==='__custom';
+    document.getElementById('currency-custom-wrap').style.display=isCustom?'flex':'none';
+    let sym=isCustom?(curCustom.value.trim()||'?'):curSel.value;
+    const v=(1234.5).toFixed(2);
+    document.getElementById('currency-preview').textContent = curSuffix.checked ? v+' '+sym : (sym.length>1?sym+' '+v:sym+v);
+  };
+  curSel.addEventListener('change',updCurrencyPreview);
+  curCustom.addEventListener('input',updCurrencyPreview);
+  curSuffix.addEventListener('change',updCurrencyPreview);
   document.querySelectorAll('[data-budget-month]').forEach(inp=>{
     inp.addEventListener('blur',()=>{ const mk=inp.dataset.budgetMonth; const v=parseFloat(inp.value); if(!isNaN(v)){ STATE.budgets[mk]=v; save(); renderSidebarBottom(); showToast('Budget updated'); renderSettings(); } });
   });
@@ -1689,6 +1734,14 @@ const ACTIONS = {
   },
   toggleWish(el){ const w=STATE.wishlist.find(x=>x.id===el.dataset.id); if(w){ w.done=!w.done; save(); renderFunContent(); } },
   deleteWish(el){ STATE.wishlist=STATE.wishlist.filter(x=>x.id!==el.dataset.id); save(); renderFunContent(); },
+  saveCurrency(){
+    const sel=document.getElementById('currency-select');
+    let sym = sel.value==='__custom' ? document.getElementById('currency-custom').value.trim() : sel.value;
+    if(!sym){ showToast('Enter a currency symbol'); return; }
+    STATE.currency = sym;
+    STATE.currencySuffix = document.getElementById('currency-suffix').checked;
+    save(); showToast('Currency updated'); renderSettings(); renderSidebarBottom();
+  },
   removeStore(el){ STATE.stores=STATE.stores.filter(s=>s!==el.dataset.store); save(); renderSettings(); renderSidebarBottom(); },
   addStore(){ addStore(); },
   openAddRecurringModal(){ openAddRecurringModal(); },
@@ -1731,7 +1784,7 @@ const ACTIONS = {
   logout(){ doLogout(); },
   openLogin(){ showAuthOverlay(); },
   resetData(){ if(confirm('Reset everything to sample data? This will overwrite your current data.')){ resetToSampleData(); showToast('Sample data restored'); goTo('dashboard'); } },
-  clearData(){ if(confirm('Clear ALL data? This cannot be undone.')){ Object.assign(STATE,{ expenses:[], groceryList:[], recurring:[], budgets:{}, stores:[], funExpenses:[], wishlist:[], funBudgets:{}, travelExpenses:[], bills:[] }); save(); showToast('All data cleared'); goTo('dashboard'); } }
+  clearData(){ if(confirm('Clear ALL data? This cannot be undone.')){ Object.assign(STATE,{ expenses:[], groceryList:[], recurring:[], budgets:{}, stores:[], funExpenses:[], wishlist:[], funBudgets:{}, travelExpenses:[], bills:[], currency:'$', currencySuffix:false }); save(); showToast('All data cleared'); goTo('dashboard'); } }
 };
 
 document.addEventListener('click',e=>{
