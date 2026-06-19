@@ -282,6 +282,9 @@ tbody tr:hover{background:#eef4f0}
     <div class="nav-divider">Life &amp; Fun</div>
     <button class="nav-btn fun" data-action="navigate" data-page="fun"><i class="ti ti-confetti"></i> Fun Spending</button>
     <button class="nav-btn" data-action="navigate" data-page="travel"><i class="ti ti-plane"></i> Travel</button>
+    <div class="nav-divider">Bills &amp; Totals</div>
+    <button class="nav-btn" data-action="navigate" data-page="bills"><i class="ti ti-file-invoice"></i> Bills</button>
+    <button class="nav-btn" data-action="navigate" data-page="summary"><i class="ti ti-sum"></i> All Expenses</button>
     <div class="nav-line"></div>
     <button class="nav-btn" data-action="navigate" data-page="settings"><i class="ti ti-settings"></i> Settings</button>
     <div class="side-bottom" id="side-bottom"></div>
@@ -295,6 +298,8 @@ tbody tr:hover{background:#eef4f0}
     <div class="page" id="page-recommendations"></div>
     <div class="page" id="page-fun"></div>
     <div class="page" id="page-travel"></div>
+    <div class="page" id="page-bills"></div>
+    <div class="page" id="page-summary"></div>
     <div class="page" id="page-settings"></div>
   </main>
 </div>
@@ -321,7 +326,7 @@ let cloudReady = false;  // true once initial cloud load is done
 let _pushTimer = null;
 
 /* ===================== STATE ===================== */
-const STATE = { expenses:[], groceryList:[], recurring:[], budgets:{}, stores:[], funExpenses:[], wishlist:[], funBudgets:{}, travelExpenses:[] };
+const STATE = { expenses:[], groceryList:[], recurring:[], budgets:{}, stores:[], funExpenses:[], wishlist:[], funBudgets:{}, travelExpenses:[], bills:[] };
 function save(){ localStorage.setItem('cartwise', JSON.stringify(STATE)); schedulePush(); }
 function load(){ const r = localStorage.getItem('cartwise'); if(r) Object.assign(STATE, JSON.parse(r)); else resetToSampleData(); }
 
@@ -346,7 +351,7 @@ async function pullCloud(){
   if(!SB || !CUR_USER) return false;
   const { data, error } = await SB.from('cartwise_data').select('data').eq('user_id', CUR_USER.id).maybeSingle();
   if(error){ console.error('Cloud load failed:', error.message); return false; }
-  if(data && data.data){ Object.assign(STATE, { expenses:[], groceryList:[], recurring:[], budgets:{}, stores:[], funExpenses:[], wishlist:[], funBudgets:{}, travelExpenses:[] }, data.data); localStorage.setItem('cartwise', JSON.stringify(STATE)); return true; }
+  if(data && data.data){ Object.assign(STATE, { expenses:[], groceryList:[], recurring:[], budgets:{}, stores:[], funExpenses:[], wishlist:[], funBudgets:{}, travelExpenses:[], bills:[] }, data.data); localStorage.setItem('cartwise', JSON.stringify(STATE)); return true; }
   return false;
 }
 async function initCloud(){
@@ -417,6 +422,10 @@ const TRAVEL_CATS = ["Flights","Lodging","Food","Transport","Activities","Shoppi
 const TRAVEL_CAT_COLORS = {"Flights":"#0077b6","Lodging":"#2a9d8f","Food":"#e76f51","Transport":"#6a4c93","Activities":"#e9740a","Shopping":"#0096c7","Other":"#888"};
 const TRAVEL_CAT_ICONS = {"Flights":"ti-plane","Lodging":"ti-bed","Food":"ti-tools-kitchen-2","Transport":"ti-car","Activities":"ti-camera","Shopping":"ti-shopping-bag","Other":"ti-dots"};
 const TRAVEL_ACCENT = "#0077b6";
+const BILL_CATS = ["Rent","Wifi","Water","PSEG","Phone","Insurance","Subscription","Other"];
+const BILL_CAT_COLORS = {"Rent":"#bc6c25","Wifi":"#0096c7","Water":"#0077b6","PSEG":"#e9740a","Phone":"#6a4c93","Insurance":"#2a9d8f","Subscription":"#7b2d8b","Other":"#888"};
+const BILL_CAT_ICONS = {"Rent":"ti-home","Wifi":"ti-wifi","Water":"ti-droplet","PSEG":"ti-bolt","Phone":"ti-device-mobile","Insurance":"ti-shield","Subscription":"ti-repeat","Other":"ti-file-dollar"};
+const BILLS_ACCENT = "#bc6c25";
 
 /* ===================== UTILITIES ===================== */
 const today = () => new Date().toISOString().split('T')[0];
@@ -551,6 +560,17 @@ function resetToSampleData(){
     { id:genId(), date:"2025-06-10", destination:"Boston", category:"Activities", amount:42, note:"museum tickets" },
     { id:genId(), date:"2025-06-10", destination:"Boston", category:"Food", amount:58, note:"seafood dinner" }
   ];
+  STATE.bills = [
+    { id:genId(), date:"2025-06-01", name:"Apartment rent", category:"Rent", amount:1850, note:"" },
+    { id:genId(), date:"2025-06-03", name:"Verizon Fios", category:"Wifi", amount:69.99, note:"internet" },
+    { id:genId(), date:"2025-06-05", name:"Water & sewer", category:"Water", amount:42.5, note:"" },
+    { id:genId(), date:"2025-06-08", name:"PSEG", category:"PSEG", amount:128.34, note:"electric + gas" },
+    { id:genId(), date:"2025-06-12", name:"Phone plan", category:"Phone", amount:55, note:"" },
+    { id:genId(), date:"2025-05-01", name:"Apartment rent", category:"Rent", amount:1850, note:"" },
+    { id:genId(), date:"2025-05-03", name:"Verizon Fios", category:"Wifi", amount:69.99, note:"internet" },
+    { id:genId(), date:"2025-05-06", name:"Water & sewer", category:"Water", amount:39.75, note:"" },
+    { id:genId(), date:"2025-05-09", name:"PSEG", category:"PSEG", amount:141.2, note:"electric + gas" }
+  ];
   STATE.groceryList = [
     { id:genId(), item:"Avocados", qty:3, store:"Trader Joe's", note:"ripe", done:false },
     { id:genId(), item:"Paper towels", qty:1, store:"Costco", note:"", done:false },
@@ -645,7 +665,7 @@ function goTo(pageId){
   renderSidebarBottom();
   window.scrollTo(0,0);
 }
-function render(p){ ({dashboard:renderDashboard,add:renderAdd,list:renderList,history:renderHistory,analytics:renderAnalytics,recommendations:renderRecommendations,fun:renderFun,travel:renderTravel,settings:renderSettings})[p]?.(); }
+function render(p){ ({dashboard:renderDashboard,add:renderAdd,list:renderList,history:renderHistory,analytics:renderAnalytics,recommendations:renderRecommendations,fun:renderFun,travel:renderTravel,bills:renderBills,summary:renderSummary,settings:renderSettings})[p]?.(); }
 
 function renderSidebarBottom(){
   const mk = curMonth();
@@ -1249,6 +1269,158 @@ function renderTravel(){
     </div>`;
 }
 
+/* ===================== BILLS ===================== */
+function billsTotal(){ return STATE.bills.reduce((s,e)=>s+e.amount,0); }
+function billsMonthTotal(key){ return STATE.bills.filter(e=>monthKey(e.date)===key).reduce((s,e)=>s+e.amount,0); }
+function renderBills(){
+  const A = BILLS_ACCENT;
+  const catOpts = BILL_CATS.map(c=>`<option>${c}</option>`).join('');
+  const all = [...STATE.bills].sort((a,b)=>b.date.localeCompare(a.date));
+  const total = billsTotal();
+  const mk = curMonth();
+  const thisMonth = billsMonthTotal(mk);
+
+  // by category
+  const catTot={}; STATE.bills.forEach(e=>catTot[e.category]=(catTot[e.category]||0)+e.amount);
+  const catEntries = Object.entries(catTot).sort((a,b)=>b[1]-a[1]);
+  const ctotal=Object.values(catTot).reduce((a,b)=>a+b,0)||1;
+  const biggest = catEntries[0];
+
+  // by month
+  const monthTot={}; STATE.bills.forEach(e=>{ const k=monthKey(e.date); monthTot[k]=(monthTot[k]||0)+e.amount; });
+  const months = Object.keys(monthTot).sort();
+  const monthMax = Math.max(...Object.values(monthTot),1);
+  const avgMonth = months.length ? months.reduce((s,k)=>s+monthTot[k],0)/months.length : 0;
+
+  const kpis = `<div class="grid grid-4 mb12">
+    <div class="kpi" style="border-color:#ecd9c2;background:#fdf7f0"><div class="k-label"><i class="ti ti-file-invoice"></i> This month</div><div class="k-val" style="color:${A}">${fmt$(thisMonth)}</div><div class="k-sub">${monthLabel(mk).split(' ')[0]} bills</div></div>
+    <div class="kpi" style="border-color:#ecd9c2;background:#fdf7f0"><div class="k-label"><i class="ti ti-calendar-stats"></i> Monthly avg</div><div class="k-val" style="color:${A}">${fmt$(avgMonth)}</div><div class="k-sub">across ${months.length} month${months.length!==1?'s':''}</div></div>
+    <div class="kpi" style="border-color:#ecd9c2;background:#fdf7f0"><div class="k-label"><i class="ti ti-receipt-2"></i> All-time total</div><div class="k-val" style="color:${A}">${fmt$(total)}</div><div class="k-sub">${all.length} bill${all.length!==1?'s':''} logged</div></div>
+    <div class="kpi" style="border-color:#ecd9c2;background:#fdf7f0"><div class="k-label"><i class="ti ti-arrow-up-right"></i> Biggest cost</div><div class="k-val" style="color:${A};font-size:20px">${biggest?esc(biggest[0]):'—'}</div><div class="k-sub">${biggest?fmt$(biggest[1])+' total':'no bills yet'}</div></div>
+  </div>`;
+
+  const form = `<div class="card mb12">
+    <div class="section-ttl" style="color:${A}"><i class="ti ti-circle-plus"></i> Add a bill</div>
+    <div class="grid grid-2">
+      <div class="field"><label class="label">Date paid</label><input class="input" type="date" id="b-date" value="${today()}" max="${today()}"></div>
+      <div class="field"><label class="label">Bill type</label><select class="select" id="b-category">${catOpts}</select></div>
+      <div class="field"><label class="label">Name / provider (optional)</label><input class="input" id="b-name" placeholder="e.g. Apartment rent, Verizon" autocomplete="off"></div>
+      <div class="field"><label class="label">Amount</label><input class="input" type="number" id="b-amount" placeholder="0.00" min="0" step="0.01"></div>
+      <div class="field" style="grid-column:1/-1"><label class="label">Note (optional)</label><input class="input" id="b-note" placeholder="e.g. electric + gas" autocomplete="off"></div>
+    </div>
+    <div class="mt16"><button class="btn" style="background:${A};border-color:${A};color:#fff" data-action="submitBillForm"><i class="ti ti-device-floppy"></i> Save bill</button></div>
+  </div>`;
+
+  const catBars = catEntries.length ? catEntries.map(([c,v])=>`
+    <div class="bar-row"><div class="bar-top"><span><i class="ti ${BILL_CAT_ICONS[c]||'ti-file-dollar'}"></i> ${c}</span><span class="amt">${fmt$(v)}</span></div>
+    <div class="bar-track"><div style="width:${v/ctotal*100}%;background:${BILL_CAT_COLORS[c]||'#888'}"></div></div></div>`).join('') : '<div class="txt-sec">No bills logged yet</div>';
+
+  const monthBars = months.length ? months.map(k=>`
+    <div class="bar-row"><div class="bar-top"><span><i class="ti ti-calendar"></i> ${monthLabel(k)}</span><span class="amt">${fmt$(monthTot[k])}</span></div>
+    <div class="bar-track"><div style="width:${monthTot[k]/monthMax*100}%;background:${A}"></div></div></div>`).join('') : '<div class="txt-sec">No bills logged yet</div>';
+
+  const tableBody = all.length ? all.map(e=>`<tr>
+    <td>${e.date.slice(5)}</td>
+    <td><span class="badge" style="background:${BILL_CAT_COLORS[e.category]||'#888'}22;color:${BILL_CAT_COLORS[e.category]||'#888'}"><i class="ti ${BILL_CAT_ICONS[e.category]||'ti-file-dollar'}"></i> ${esc(e.category)}</span></td>
+    <td><b>${esc(e.name||e.category)}</b></td>
+    <td style="color:${A};font-weight:700">${fmt$(e.amount)}</td>
+    <td class="txt-sec">${esc(e.note||'')}</td>
+    <td><button class="btn btn-ghost btn-sm" data-action="deleteBill" data-id="${e.id}"><i class="ti ti-trash"></i></button></td></tr>`).join('')
+    : '<tr><td colspan="6"><div class="empty-state"><i class="ti ti-file-off"></i>No bills logged yet — add rent, wifi, water, PSEG and more above</div></td></tr>';
+
+  document.getElementById('page-bills').innerHTML = `
+    <div class="page-head">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <h1 style="color:${A}">🧾 Bills</h1>
+        <span class="badge" style="background:#fdf2e6;color:${A};border:1px solid #ecd9c2;font-size:13px">${fmt$(thisMonth)} this month</span>
+      </div>
+    </div>
+    ${kpis}${form}
+    <div class="grid grid-2 mb12">
+      <div class="card"><div class="section-ttl" style="color:${A}"><i class="ti ti-chart-pie"></i> By bill type</div>${catBars}</div>
+      <div class="card"><div class="section-ttl" style="color:${A}"><i class="ti ti-calendar-month"></i> By month</div>${monthBars}</div>
+    </div>
+    <div class="card"><div class="section-ttl" style="color:${A}"><i class="ti ti-list-details"></i> All bills</div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Date</th><th>Type</th><th>Name</th><th>Amount</th><th>Note</th><th></th></tr></thead>
+        <tbody>${tableBody}</tbody>
+        <tfoot><tr><td colspan="3" style="text-align:right;font-weight:700">All-time total</td><td colspan="3" style="color:${A};font-weight:700">${fmt$(total)}</td></tr></tfoot>
+      </table></div>
+    </div>`;
+}
+
+/* ===================== SUMMARY (ALL EXPENSES) ===================== */
+function groceryAllTotal(){ return STATE.expenses.reduce((s,e)=>s+e.price*e.qty,0); }
+function funAllTotal(){ return STATE.funExpenses.reduce((s,e)=>s+e.amount,0); }
+function renderSummary(){
+  const mk = curMonth();
+  // [label, color, icon, page, allTimeTotal, thisMonthTotal, count]
+  const sections = [
+    ["Groceries", "var(--green-mid)", "ti-shopping-cart", "history", groceryAllTotal(), monthTotal(mk), STATE.expenses.length],
+    ["Fun", "#c77dff", "ti-confetti", "fun", funAllTotal(), funMonthTotal(mk), STATE.funExpenses.length],
+    ["Travel", TRAVEL_ACCENT, "ti-plane", "travel", travelTotal(), STATE.travelExpenses.filter(e=>monthKey(e.date)===mk).reduce((s,e)=>s+e.amount,0), STATE.travelExpenses.length],
+    ["Bills", BILLS_ACCENT, "ti-file-invoice", "bills", billsTotal(), billsMonthTotal(mk), STATE.bills.length]
+  ];
+  const grandAll = sections.reduce((s,x)=>s+x[4],0);
+  const grandMonth = sections.reduce((s,x)=>s+x[5],0);
+  const grandCount = sections.reduce((s,x)=>s+x[6],0);
+  const maxAll = Math.max(...sections.map(x=>x[4]),1);
+
+  const hero = `<div class="card mb12" style="background:linear-gradient(135deg,#1a3328,#2d6a4f);color:#fff;border:none">
+    <div style="font-size:13px;color:#9fc4ac;text-transform:uppercase;letter-spacing:.6px;font-weight:600"><i class="ti ti-sum"></i> Total spending — all sections combined</div>
+    <div style="font-size:40px;font-weight:700;margin:6px 0 2px">${fmt$(grandAll)}</div>
+    <div style="color:#cfe3d6;font-size:13px">${grandCount} entries across groceries, fun, travel &amp; bills · ${fmt$(grandMonth)} so far in ${monthLabel(mk).split(' ')[0]}</div>
+  </div>`;
+
+  const kpis = `<div class="grid grid-4 mb12">${sections.map(([label,color,icon,page,allT,monT,cnt])=>`
+    <div class="kpi" style="cursor:pointer" data-action="navigate" data-page="${page}">
+      <div class="k-label"><i class="ti ${icon}" style="color:${color}"></i> ${label}</div>
+      <div class="k-val" style="color:${color}">${fmt$(allT)}</div>
+      <div class="k-sub">${fmt$(monT)} this month · ${cnt} entr${cnt!==1?'ies':'y'}</div>
+    </div>`).join('')}</div>`;
+
+  const bars = sections.slice().sort((a,b)=>b[4]-a[4]).map(([label,color,icon,page,allT])=>`
+    <div class="bar-row"><div class="bar-top"><span><i class="ti ${icon}" style="color:${color}"></i> ${label}</span><span class="amt">${fmt$(allT)} <span class="txt-sec" style="font-weight:400">(${grandAll?Math.round(allT/grandAll*100):0}%)</span></span></div>
+    <div class="bar-track"><div style="width:${allT/maxAll*100}%;background:${color}"></div></div></div>`).join('');
+
+  // month-by-month combined stacked-ish table
+  const monthsSet = new Set();
+  STATE.expenses.forEach(e=>monthsSet.add(monthKey(e.date)));
+  STATE.funExpenses.forEach(e=>monthsSet.add(monthKey(e.date)));
+  STATE.travelExpenses.forEach(e=>monthsSet.add(monthKey(e.date)));
+  STATE.bills.forEach(e=>monthsSet.add(monthKey(e.date)));
+  const months = [...monthsSet].sort().reverse();
+  const travelMonth = k=>STATE.travelExpenses.filter(e=>monthKey(e.date)===k).reduce((s,e)=>s+e.amount,0);
+  const monthRows = months.length ? months.map(k=>{
+    const g=monthTotal(k), f=funMonthTotal(k), t=travelMonth(k), b=billsMonthTotal(k);
+    const tot=g+f+t+b;
+    return `<tr>
+      <td><b>${monthLabel(k)}</b></td>
+      <td style="color:var(--green-mid)">${fmt$(g)}</td>
+      <td style="color:#c77dff">${fmt$(f)}</td>
+      <td style="color:${TRAVEL_ACCENT}">${fmt$(t)}</td>
+      <td style="color:${BILLS_ACCENT}">${fmt$(b)}</td>
+      <td style="font-weight:700">${fmt$(tot)}</td></tr>`;
+  }).join('') : '<tr><td colspan="6"><div class="empty-state"><i class="ti ti-calendar-off"></i>No spending logged yet</div></td></tr>';
+
+  document.getElementById('page-summary').innerHTML = `
+    <div class="page-head"><div><h1>All Expenses</h1><div class="sub">Everything you spend, summed across every section</div></div></div>
+    ${hero}${kpis}
+    <div class="card mb12"><div class="section-ttl"><i class="ti ti-chart-bar"></i> Where your money goes (all time)</div>${bars}</div>
+    <div class="card"><div class="section-ttl"><i class="ti ti-calendar-month"></i> Month by month — every section</div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Month</th><th>Groceries</th><th>Fun</th><th>Travel</th><th>Bills</th><th>Total</th></tr></thead>
+        <tbody>${monthRows}</tbody>
+        <tfoot><tr><td style="text-align:right;font-weight:700">All time</td>
+          <td style="color:var(--green-mid);font-weight:700">${fmt$(groceryAllTotal())}</td>
+          <td style="color:#c77dff;font-weight:700">${fmt$(funAllTotal())}</td>
+          <td style="color:${TRAVEL_ACCENT};font-weight:700">${fmt$(travelTotal())}</td>
+          <td style="color:${BILLS_ACCENT};font-weight:700">${fmt$(billsTotal())}</td>
+          <td style="font-weight:700">${fmt$(grandAll)}</td></tr></tfoot>
+      </table></div>
+    </div>`;
+}
+
 /* ===================== SETTINGS ===================== */
 function renderSettings(){
   const storePills=STATE.stores.length ? STATE.stores.map(s=>{
@@ -1497,6 +1669,16 @@ const ACTIONS = {
     save(); showToast('Travel saved! ✈️'); renderTravel(); renderSidebarBottom();
   },
   deleteTravel(el){ STATE.travelExpenses=STATE.travelExpenses.filter(x=>x.id!==el.dataset.id); save(); showToast('Deleted'); renderTravel(); },
+  submitBillForm(){
+    const amount=parseFloat(document.getElementById('b-amount').value);
+    if(isNaN(amount)){ showToast('Enter an amount'); return; }
+    const category=document.getElementById('b-category').value;
+    STATE.bills.push({ id:genId(), date:document.getElementById('b-date').value||today(),
+      name:document.getElementById('b-name').value.trim(), category, amount,
+      note:document.getElementById('b-note').value.trim() });
+    save(); showToast('Bill saved! 🧾'); renderBills(); renderSidebarBottom();
+  },
+  deleteBill(el){ STATE.bills=STATE.bills.filter(x=>x.id!==el.dataset.id); save(); showToast('Deleted'); renderBills(); },
   funHistTab(el){ funHistMonth=el.dataset.month; renderFunContent(); },
   deleteFun(el){ STATE.funExpenses=STATE.funExpenses.filter(x=>x.id!==el.dataset.id); save(); showToast('Deleted'); renderFunContent(); renderSidebarBottom(); },
   addWishItem(){
@@ -1549,7 +1731,7 @@ const ACTIONS = {
   logout(){ doLogout(); },
   openLogin(){ showAuthOverlay(); },
   resetData(){ if(confirm('Reset everything to sample data? This will overwrite your current data.')){ resetToSampleData(); showToast('Sample data restored'); goTo('dashboard'); } },
-  clearData(){ if(confirm('Clear ALL data? This cannot be undone.')){ Object.assign(STATE,{ expenses:[], groceryList:[], recurring:[], budgets:{}, stores:[], funExpenses:[], wishlist:[], funBudgets:{}, travelExpenses:[] }); save(); showToast('All data cleared'); goTo('dashboard'); } }
+  clearData(){ if(confirm('Clear ALL data? This cannot be undone.')){ Object.assign(STATE,{ expenses:[], groceryList:[], recurring:[], budgets:{}, stores:[], funExpenses:[], wishlist:[], funBudgets:{}, travelExpenses:[], bills:[] }); save(); showToast('All data cleared'); goTo('dashboard'); } }
 };
 
 document.addEventListener('click',e=>{
