@@ -1,4 +1,4 @@
-# 🛒 CartWise
+# 🛒 SpendRift
 
 A complete personal **expense tracker** for grocery spending and fun/lifestyle spending — built as a single self-contained `index.html` with **no frameworks and no build step**.
 
@@ -75,7 +75,7 @@ Works the same on Netlify, GitHub Pages, or any static host.
 - External resources (via CDN only):
   - [Tabler Icons](https://tabler.io/icons) (webfont)
   - [DM Sans](https://fonts.google.com/specimen/DM+Sans) (Google Fonts)
-- **Persistence:** `localStorage` under the key `cartwise`.
+- **Persistence:** `localStorage` under the key `cartwise` (kept for backward compatibility with existing data).
 
 See [`ARCHITECTURE.md`](ARCHITECTURE.md) for how the code is structured.
 

@@ -1,6 +1,6 @@
 # Architecture
 
-CartWise is a single-file application: all HTML, CSS, and JavaScript live in [`index.html`](index.html). There is **no build step, no framework, and no npm dependency**. This document explains how the code is organized so it stays easy to extend.
+SpendRift is a single-file application: all HTML, CSS, and JavaScript live in [`index.html`](index.html). There is **no build step, no framework, and no npm dependency**. This document explains how the code is organized so it stays easy to extend.
 
 ---
 
