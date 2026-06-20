@@ -19,7 +19,8 @@
 html,body{height:100%}
 body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5}
 .ti{line-height:1!important;vertical-align:middle}
-#app{display:flex;min-height:100vh}
+#app{display:none;min-height:100vh}
+#app.ready{display:flex}
 
 /* ---------- Sidebar ---------- */
 #sidebar{width:248px;min-width:248px;background:var(--sidebar);color:#dbe8df;display:flex;flex-direction:column;padding:18px 14px;position:sticky;top:0;height:100vh}
@@ -358,8 +359,11 @@ async function pullCloud(){
 async function initCloud(){
   if(!cloudEnabled()) return;
   SB = window.__createSupabase(SUPABASE_URL, SUPABASE_ANON_KEY);
-  const { data:{ session } } = await SB.auth.getSession();
-  if(session && session.user){ await onSignedIn(session.user, false); }
+  // Verify the token with the server (getUser) rather than trusting the locally
+  // stored session (getSession). A stored-but-expired token would otherwise show
+  // the dashboard, then bounce to login when the background refresh fails.
+  const { data:{ user }, error } = await SB.auth.getUser();
+  if(user && !error){ await onSignedIn(user, false); }
   else { showAuthOverlay(); }
   SB.auth.onAuthStateChange((event, sess)=>{
     if(event==='SIGNED_IN' && sess && sess.user && (!CUR_USER || CUR_USER.id!==sess.user.id)){ onSignedIn(sess.user, false); }
@@ -686,6 +690,7 @@ function alertCount(){ return priceAlerts().length + STATE.recurring.filter(recu
 
 /* ===================== NAV / RENDER DISPATCH ===================== */
 function goTo(pageId){
+  document.getElementById('app').classList.add('ready');   // reveal the app shell (hidden until auth is resolved)
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+pageId).classList.add('active');
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.page===pageId));
