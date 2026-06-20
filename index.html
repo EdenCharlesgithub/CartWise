@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CartWise — Expense Tracker</title>
+<title>SpendRift — Expense Tracker</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -272,7 +272,7 @@ tbody tr:hover{background:#eef4f0}
   <nav id="sidebar">
     <div class="logo">
       <div class="mark"><i class="ti ti-shopping-cart-bolt"></i></div>
-      <div class="name">Cart<span>Wise</span></div>
+      <div class="name">Spend<span>Rift</span></div>
     </div>
     <button class="nav-btn" data-action="navigate" data-page="dashboard"><i class="ti ti-dashboard"></i> Dashboard <span class="nav-pill" id="nav-alert-pill" style="display:none"></span></button>
     <button class="nav-btn" data-action="navigate" data-page="add"><i class="ti ti-circle-plus"></i> Add Purchase</button>
@@ -399,14 +399,14 @@ function hideAuthOverlay(){ document.getElementById('auth-overlay').classList.re
 // Cover the screen immediately on startup so logged-out users never see a flash of the dashboard.
 function showAuthLoading(){
   document.getElementById('auth-card').innerHTML = `
-    <div class="auth-logo"><div class="mark"><i class="ti ti-shopping-cart-bolt"></i></div><div class="name">Cart<span>Wise</span></div></div>
+    <div class="auth-logo"><div class="mark"><i class="ti ti-shopping-cart-bolt"></i></div><div class="name">Spend<span>Rift</span></div></div>
     <div class="auth-sub" style="margin-top:16px;display:flex;align-items:center;gap:8px"><i class="ti ti-loader-2 spin"></i> Loading…</div>`;
   document.getElementById('auth-overlay').classList.add('visible');
 }
 function renderAuthCard(){
   const isLogin = authMode==='login';
   document.getElementById('auth-card').innerHTML = `
-    <div class="auth-logo"><div class="mark"><i class="ti ti-shopping-cart-bolt"></i></div><div class="name">Cart<span>Wise</span></div></div>
+    <div class="auth-logo"><div class="mark"><i class="ti ti-shopping-cart-bolt"></i></div><div class="name">Spend<span>Rift</span></div></div>
     <h2>${isLogin?'Welcome back':'Create your account'}</h2>
     <div class="auth-sub">${isLogin?'Log in to see your data on any device.':'Sign up once, then log in anywhere to sync.'}</div>
     <div class="field"><label class="label">Email</label><input class="input" type="email" id="auth-email" placeholder="you@example.com" autocomplete="email"></div>
@@ -1811,7 +1811,7 @@ function exportCSV(){
   const csv=[h,...rows].map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
-  a.download='cartwise_expenses.csv'; a.click();
+  a.download='spendrift_expenses.csv'; a.click();
   showToast('CSV exported');
 }
 
