@@ -330,7 +330,12 @@ let _pushTimer = null;
 /* ===================== STATE ===================== */
 const STATE = { expenses:[], groceryList:[], recurring:[], budgets:{}, stores:[], funExpenses:[], wishlist:[], funBudgets:{}, travelExpenses:[], bills:[], currency:'$', currencySuffix:false };
 function save(){ localStorage.setItem('cartwise', JSON.stringify(STATE)); schedulePush(); }
-function load(){ const r = localStorage.getItem('cartwise'); if(r) Object.assign(STATE, JSON.parse(r)); else resetToSampleData(); }
+function load(){ const r = localStorage.getItem('cartwise'); if(r) Object.assign(STATE, JSON.parse(r)); else initEmpty(); }
+// New users start with a clean, empty tracker (no sample data).
+function initEmpty(){
+  Object.assign(STATE, { expenses:[], groceryList:[], recurring:[], budgets:{}, stores:[], funExpenses:[], wishlist:[], funBudgets:{}, travelExpenses:[], bills:[], currency:'$', currencySuffix:false });
+  save();
+}
 
 /* ===================== CLOUD SYNC ===================== */
 function cloudEnabled(){ return !!(SUPABASE_URL && SUPABASE_ANON_KEY && window.__createSupabase); }
